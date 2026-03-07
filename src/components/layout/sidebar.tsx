@@ -2,19 +2,19 @@
 
 import { cn } from "@/lib/utils";
 import {
-    ChevronLeft,
-    DollarSign,
-    Gauge,
-    LayoutDashboard,
-    Mail,
-    ScrollText,
-    Server,
-    Settings,
-    ShieldAlert,
-    Siren,
-    Stethoscope,
-    Telescope,
-    Users
+  ChevronLeft,
+  DollarSign,
+  Gauge,
+  LayoutDashboard,
+  Mail,
+  ScrollText,
+  Server,
+  Settings,
+  ShieldAlert,
+  Siren,
+  Stethoscope,
+  Telescope,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

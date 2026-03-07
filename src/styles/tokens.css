@@ -106,10 +106,11 @@
      TYPOGRAPHY SCALE - INFORMATION DENSITY
      =========================================== */
 
-  /* Font Families */
+  /* Font Families — set at runtime by next/font/google on <html>; fallbacks here */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Rajdhani', 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --font-display: 'Syne', 'Inter', sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', 'Consolas', monospace;
+  --font-serif: 'Instrument Serif', Georgia, serif;
 
   /* Font Sizes - Compressed for maximum data density */
   --text-xs: 0.6875rem;   /* 11px - Metadata */
@@ -211,6 +212,24 @@
 
   --noise-opacity: 0.015;
   --noise-size: 200px;
+
+  /* ===========================================
+     BRAND PALETTE — CONSTITUTIONAL LAYER
+     From keon-hero-redesign design system
+     =========================================== */
+
+  --brand-void: #060911;
+  --brand-deep: #0b1020;
+  --brand-surface: #0f1828;
+  --brand-border: rgba(255, 255, 255, 0.06);
+  --brand-border-bright: rgba(64, 220, 196, 0.2);
+  --brand-teal: #40dcc4;
+  --brand-teal-dim: #2aaa96;
+  --brand-teal-ghost: rgba(64, 220, 196, 0.08);
+  --brand-teal-glow: rgba(64, 220, 196, 0.15);
+  --brand-ice: #e8f4f2;
+  --brand-mist: rgba(232, 244, 242, 0.55);
+  --brand-ghost: rgba(232, 244, 242, 0.3);
 }
 
 /**

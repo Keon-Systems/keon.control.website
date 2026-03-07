@@ -1,0 +1,59 @@
+location: East US 2
+name: keon-mcp-gateway-staging
+properties:
+  managedEnvironmentId: /subscriptions/909e0322-c3c0-4bce-ae53-b3d2ed735bd4/resourceGroups/keon-rg/providers/Microsoft.App/managedEnvironments/cae-keon-staging-redteam
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      allowInsecure: false
+      external: true
+      targetPort: 8080
+      traffic:
+      - latestRevision: true
+        weight: 100
+      transport: Auto
+    registries:
+    - server: keonomegaacr3715.azurecr.io
+      username: keonomegaacr3715
+      passwordSecretRef: keonomegaacr3715azurecrio-keonomegaacr3715
+    secrets:
+    - name: keonomegaacr3715azurecrio-keonomegaacr3715
+  template:
+    containers:
+    - name: keon-mcp-gateway-staging
+      image: keonomegaacr3715.azurecr.io/keon-mcp-gateway:prod-20260303001645
+      env:
+      - name: Runtime__BaseUrl
+        value: http://keon-runtime-staging
+      - name: IngressSpine__Mode
+        value: Required
+      - name: IngressSpine__ConnectionString
+        value: Data Source=/tmp/ingress_spine.db
+      - name: Auth__Issuer
+        value: keon-auth-staging
+      - name: Auth__Audience
+        value: keon-mcp-gateway-staging
+      - name: Auth__JwtPublicKeyPem
+        value: "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArEUdClXL/OQJdrmChpwb\\n6FVPCA26qAr1C5VZ8TgQOd9mCXpcObz417hNPQcGmabpS2+oBJK4wsUpE7RIjOap\\n2sFKDyVnKM+n/WnrLtnI8sTBdumsxR/3b30ce+c6cNPiC0JoZUynujEeKpx2/Sxq\\nHmXjiMSk2T+V6lSlbW/FTwB4/n7H+/EU9xD31JmFcF9gGLQWuz3ptD4goKv0kAQb\\naQ/zTK+4A7BEmq7Lu4F52PI5nn1b/HlEUtmi59gOYA/rXHe/dl16R7jOccXgx9dS\\nAsyb/aNEfZExx3ZKArCPvGKCkwf9hedftPZ768dgVVBwnTxr77dlMwJ1I7L0lBfH\\nGQIDAQAB\\n-----END PUBLIC KEY-----"
+      - name: RateLimiting__Enabled
+        value: "true"
+      - name: RateLimiting__PermitLimit
+        value: "5"
+      - name: RateLimiting__WindowSeconds
+        value: "60"
+      resources:
+        cpu: 0.5
+        memory: 1Gi
+        ephemeralStorage: 2Gi
+      volumeMounts:
+      - volumeName: keon-gateway-data-staging
+        mountPath: /data
+    scale:
+      minReplicas: 1
+      maxReplicas: 1
+      cooldownPeriod: 300
+      pollingInterval: 30
+    volumes:
+    - name: keon-gateway-data-staging
+      storageType: AzureFile
+      storageName: keon-gateway-data-staging

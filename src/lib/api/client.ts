@@ -6,7 +6,6 @@
 import { defaultApiConfig, type ApiConfig } from './config';
 import {
   ApiError,
-  NetworkError,
   NotFoundError,
   ServerError,
   TimeoutError,
@@ -132,7 +131,10 @@ async function handleErrorResponse(response: Response): Promise<never> {
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
       const errorData = await response.json();
-      errorMessage = errorData.error || errorData.message || errorMessage;
+      errorMessage =
+        (typeof errorData.error === 'string' ? errorData.error : errorData.error?.message) ||
+        errorData.message ||
+        errorMessage;
       errorDetails = errorData;
     } else {
       errorMessage = await response.text() || errorMessage;

@@ -1,6 +1,7 @@
 "use client";
 
 import { getApiConfig } from "@/lib/api";
+import { TenantContextProvider } from "@/lib/control-plane/tenant-context";
 import { IncidentModeProvider } from "@/lib/incident-mode";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { AppStateProvider } from "@/lib/state";
@@ -18,9 +19,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
       <AppStateProvider initialState={{ liveMode: apiConfig.liveMode }}>
-        <IncidentModeProvider>
-          {children}
-        </IncidentModeProvider>
+        <TenantContextProvider>
+          <IncidentModeProvider>
+            {children}
+          </IncidentModeProvider>
+        </TenantContextProvider>
       </AppStateProvider>
     </QueryProvider>
   );

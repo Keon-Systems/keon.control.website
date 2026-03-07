@@ -1,20 +1,36 @@
 "use client";
 
 import * as React from "react";
+import { Shell } from "@/components/layout";
 import { PageContainer, PageHeader, Card, CardHeader, CardContent } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getBillingSummary, listControlTenants } from "@/lib/api/control-plane";
 import { User, Bell, Palette, AlertTriangle } from "lucide-react";
 
 export default function SettingsPage() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Settings"
-        description="Configure your application preferences and account settings"
-      />
+  const [billingState, setBillingState] = React.useState<string>("loading");
 
-      <div className="max-w-2xl space-y-6">
+  React.useEffect(() => {
+    async function load() {
+      const tenants = await listControlTenants();
+      if (!tenants[0]) return;
+      const billing = await getBillingSummary(tenants[0].id);
+      setBillingState(billing.billingState);
+    }
+
+    load().catch(() => setBillingState("unavailable"));
+  }, []);
+
+  return (
+    <Shell>
+      <PageContainer>
+        <PageHeader
+          title="Settings"
+          description="Configure your application preferences and account settings"
+        />
+
+        <div className="max-w-2xl space-y-6">
         {/* Profile Settings */}
         <Card>
           <CardHeader
@@ -37,6 +53,10 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="font-mono text-sm font-medium text-[#C5C6C7]">Email</label>
                 <Input defaultValue="admin@example.com" type="email" />
+              </div>
+              <div className="space-y-2">
+                <label className="font-mono text-sm font-medium text-[#C5C6C7]">Billing State</label>
+                <Input value={billingState} readOnly />
               </div>
               <Button>Save Changes</Button>
             </div>
@@ -132,8 +152,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </PageContainer>
+        </div>
+      </PageContainer>
+    </Shell>
   );
 }
 
@@ -169,4 +190,3 @@ function SettingToggle({
     </div>
   );
 }
-

@@ -44,6 +44,12 @@ export default async function EvidenceDocPage({ params }: EvidenceDocPageProps) 
       <header className="space-y-2">
         <h1 className="font-display text-3xl text-[--flash]">Source documents</h1>
         <p className="text-sm text-[--steel]">{doc.description}</p>
+        <Link
+          href={`/evidence/source/${doc.slug}/download`}
+          className="inline-block text-xs font-mono uppercase tracking-[0.4em] text-[--reactor-glow]"
+        >
+          Download
+        </Link>
       </header>
 
       <section className="rounded border border-[#384656] bg-[#0E1118] p-5 text-sm text-[--steel]">

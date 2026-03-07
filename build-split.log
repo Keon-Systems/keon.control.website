@@ -1,0 +1,24 @@
+
+> keon-command-center@0.1.0 build D:\Repos\keon-omega\keon.control.website
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.1s
+  Running TypeScript ...
+Failed to compile.
+
+./src/components/layout/topbar.tsx:79:52
+Type error: Property 'displayName' does not exist on type 'MeResponse'.
+
+  77 |         <div className="flex items-center gap-2 rounded border border-[#384656] bg-[#0B0C10] px-4 py-2">
+  78 |           <span className="font-mono text-xs uppercase tracking-wider text-[#C5C6C7]">
+> 79 |             Operator: {isLoading ? "Loading" : me?.displayName ?? "Internal"}
+     |                                                    ^
+  80 |           </span>
+  81 |           <span className="font-mono text-xs uppercase tracking-wider text-[#384656]">|</span>
+  82 |           <span className="font-mono text-xs uppercase tracking-wider text-[#66FCF1]">
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

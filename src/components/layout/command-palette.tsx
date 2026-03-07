@@ -130,6 +130,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       icon: Settings,
       action: () => nav("/settings"),
     },
+    {
+      id: "tenant",
+      label: "Tenant",
+      description: "Tenant identity and account boundary details",
+      icon: Users,
+      action: () => {
+        router.push("/tenants");
+        onOpenChange(false);
+      },
+    },
   ];
 
   // Quick action commands
@@ -151,8 +161,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       keywords: ["find", "tenant", "search", "organization"],
     },
   ];
-
-  const allCommands = [...navigationCommands, ...quickActions];
 
   const filteredNav = search
     ? navigationCommands.filter(

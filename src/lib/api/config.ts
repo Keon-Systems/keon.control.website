@@ -29,7 +29,8 @@ export interface ApiConfig {
  * Get API configuration from environment variables
  */
 export function getApiConfig(): ApiConfig {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+  const appOrigin = process.env.NEXT_PUBLIC_APP_ORIGIN?.replace(/\/+$/, "");
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || (appOrigin ? `${appOrigin}/api/control` : 'http://localhost:3000/api/control');
   const timeout = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000', 10);
   const useMockFallback = process.env.NEXT_PUBLIC_API_USE_MOCK_FALLBACK !== 'false';
   const liveMode = process.env.NEXT_PUBLIC_API_LIVE_MODE === 'true';

@@ -38,12 +38,29 @@ export type {
   Alert,
   Policy,
   Tenant,
+  CheckoutSessionResponse,
+  PortalSessionResponse,
   SystemMetrics,
   EvidencePackRequest,
   EvidencePackMetadata,
   LegalHoldCreateRequest,
   LegalHold,
   RetentionRun,
+  ApiEnvelope,
+  ApiMeta,
+  ApiErrorPayload,
+  MeResponse,
+  TenantLimits,
+  TenantProfile,
+  DashboardSummary,
+  DashboardHealthItem,
+  DashboardTrustBreakdown,
+  DashboardTrustVector,
+  DashboardActivityItem,
+  DashboardPolicyOverrides,
+  DashboardQuorumHealth,
+  DashboardLastIrreversible,
+  DashboardScorecard,
 } from './types';
 
 // Receipts API
@@ -69,3 +86,17 @@ export type { ListPoliciesOptions, GetPolicyOptions } from './policies';
 // Tenants API (stub)
 export { listTenants, getTenant } from './tenants';
 export type { ListTenantsOptions, GetTenantOptions } from './tenants';
+
+// Tenant Control Plane
+export {
+  getMe,
+  getTenantProfile,
+  getDashboardScorecard,
+  getDashboardSummary,
+  getDashboardHealth,
+  getDashboardTrustVector,
+  getDashboardActivity,
+  getDashboardLastIrreversible,
+  createCheckoutSession,
+  createPortalSession,
+} from './control-plane';

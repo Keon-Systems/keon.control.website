@@ -22,6 +22,8 @@ const secondaryDocs = [
   { label: "View START_HERE", href: "/evidence/source/start-here" },
   { label: "View BUYER_WOW", href: "/evidence/source/buyer-wow" },
   { label: "View API Surface Snapshot", href: "/evidence/source/api-surface" },
+  { label: "View Whitepaper", href: "/evidence/source/whitepaper-v2" },
+  { label: "Download Whitepaper", href: "/evidence/source/whitepaper-v2/download" },
 ];
 
 export default function EvidenceLandingPage() {

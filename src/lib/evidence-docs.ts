@@ -42,6 +42,13 @@ const registry: EvidenceDoc[] = [
     filePath: "samples/golden-path/verify-pack.ps1",
     language: "powershell",
   },
+  {
+    slug: "whitepaper-v2",
+    label: "whitepaper/whitepaper.md",
+    description: "Canonical Keon constitutional execution whitepaper (v2.0).",
+    filePath: "docs/whitepaper/whitepaper.md",
+    language: "markdown",
+  },
 ];
 
 export const evidenceDocRegistry = registry;
