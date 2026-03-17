@@ -5,7 +5,40 @@ import type {
   ReformLegitimacyAssessment,
 } from "@/lib/contracts/collective";
 
-export type GovernanceCollectionKind = "tenants" | "policies" | "runs" | "alerts";
+export type GovernanceCollectionKind =
+  | "tenants"
+  | "policies"
+  | "runs"
+  | "alerts"
+  // Agent 5 — Merge 1 additions
+  | "incidents"
+  | "slo"
+  | "jobs"
+  | "delivery"
+  | "security-threats"
+  | "security-auth"
+  | "security-abuse"
+  | "security-compliance"
+  | "finance-mrr"
+  | "finance-collections"
+  | "finance-azure-spend"
+  | "finance-budget-alerts"
+  | "infrastructure-resources"
+  | "infrastructure-health"
+  | "communications-messages"
+  | "communications-templates"
+  | "rollouts"
+  | "rollouts-flags"
+  | "rollouts-windows"
+  | "audit"
+  | "overrides"
+  | "operators"
+  | "settings-api-keys"
+  // Agent 4 — Merge 2C additions
+  | "finance-billing"
+  | "finance-azure-spend-alerts"
+  | "communications-history"
+  | "rollouts-active";
 export type GovernanceMode = "MOCK" | "LIVE";
 
 export interface GovernanceIndicators {
@@ -108,6 +141,61 @@ function mockData(kind: GovernanceCollectionKind): RecordLike[] {
       return mockRuns();
     case "alerts":
       return mockAlertsData();
+    case "incidents":
+      return mockIncidents as RecordLike[];
+    case "slo":
+      return mockSloBurnRates as RecordLike[];
+    case "jobs":
+      return mockJobQueues as RecordLike[];
+    case "delivery":
+      return mockDeliveryChannels as RecordLike[];
+    case "security-threats":
+      return mockThreatSignals as RecordLike[];
+    case "security-auth":
+      return mockAuthAnomalies as RecordLike[];
+    case "security-abuse":
+      return mockAbuseEvents as RecordLike[];
+    case "security-compliance":
+      return mockComplianceChecks as RecordLike[];
+    case "finance-mrr":
+      return [mockMrrSummary] as RecordLike[];
+    case "finance-collections":
+      return mockCollections as RecordLike[];
+    case "finance-azure-spend":
+      return [mockAzureSpend] as RecordLike[];
+    case "finance-budget-alerts":
+      return mockBudgetAlerts as RecordLike[];
+    case "infrastructure-resources":
+      return mockAzureResources as RecordLike[];
+    case "infrastructure-health":
+      return mockResourceGroupHealth as RecordLike[];
+    case "communications-messages":
+      return mockCommMessages as RecordLike[];
+    case "communications-templates":
+      return mockCommTemplates as RecordLike[];
+    case "rollouts":
+      return mockRollouts as RecordLike[];
+    case "rollouts-flags":
+      return mockFeatureFlags as RecordLike[];
+    case "rollouts-windows":
+      return mockMaintenanceWindows as RecordLike[];
+    case "audit":
+      return mockAuditEntries as RecordLike[];
+    case "overrides":
+      return mockOverrideReceipts as RecordLike[];
+    case "operators":
+      return mockOperators as RecordLike[];
+    case "settings-api-keys":
+      return mockApiKeys as RecordLike[];
+    // Agent 4 aliases
+    case "finance-billing":
+      return [mockMrrSummary] as RecordLike[];
+    case "finance-azure-spend-alerts":
+      return mockBudgetAlerts as RecordLike[];
+    case "communications-history":
+      return mockCommMessages as RecordLike[];
+    case "rollouts-active":
+      return mockRollouts as RecordLike[];
   }
 }
 

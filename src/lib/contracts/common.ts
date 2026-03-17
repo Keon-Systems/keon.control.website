@@ -3,6 +3,12 @@ import { z } from "zod";
 export const RiskLevelSchema = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 export type RiskLevel = z.infer<typeof RiskLevelSchema>;
 
+export const PrivilegeLevelSchema = z.enum(["OPERATOR", "ADMIN", "FINANCE_ADMIN", "SECURITY_ADMIN", "SUPER_ADMIN"]);
+export type PrivilegeLevel = z.infer<typeof PrivilegeLevelSchema>;
+
+export const OperatorRoleSchema = z.enum(["operator", "admin", "finance", "security", "support", "readonly"]);
+export type OperatorRole = z.infer<typeof OperatorRoleSchema>;
+
 export const RunModeSchema = z.enum(["AUDIT_ONLY", "ENFORCE"]);
 export type RunMode = z.infer<typeof RunModeSchema>;
 

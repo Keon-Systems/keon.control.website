@@ -132,3 +132,15 @@ export function formatBytes(bytes: number): string {
 
   return `${value.toFixed(2)} ${units[exponent]}`
 }
+
+export function formatCurrency(amount: number, opts?: { maximumFractionDigits?: number }): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: opts?.maximumFractionDigits ?? 0,
+  }).format(amount);
+}
+
+export function formatPercent(value: number, decimals = 1): string {
+  return `${value.toFixed(decimals)}%`;
+}
