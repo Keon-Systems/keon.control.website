@@ -126,6 +126,7 @@ export interface UIDeliberationRecord {
   readonly contributorId: string;
   readonly position: string;
   readonly reasoning: string;
+  readonly evidenceRefs: readonly string[];
   readonly evidenceRefCount: number;
   readonly timestamp: string;
 }
@@ -260,6 +261,7 @@ export function toUIDeliberationRecord(record: DeliberationRecord): UIDeliberati
     contributorId: record.contributorId,
     position: record.position,
     reasoning: record.reasoning,
+    evidenceRefs: record.evidenceRefs,
     evidenceRefCount: record.evidenceRefs.length,
     timestamp: record.timestamp,
   };
