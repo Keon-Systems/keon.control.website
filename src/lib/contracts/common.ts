@@ -29,6 +29,6 @@ export const IsoDateTimeSchema = z.string().refine((s) => !Number.isNaN(Date.par
 
 export const Sha256Schema = z.string().regex(/^sha256:[a-f0-9]{64}$/, "Expected sha256:<64-hex>");
 
-export const RhidSchema = z.string().regex(/^rhid:(receipt|artifact|llm|toolio|policy|gate|logslice):[a-f0-9-]+$/, "Invalid RHID format");
+export const RhidSchema = z.string().regex(/^rhid:(receipt|artifact|llm|toolio|policy|gate|logslice|deliberation|reform|lineage):[a-f0-9-]+$/, "Invalid RHID format");
 export type Rhid = z.infer<typeof RhidSchema>;
 
