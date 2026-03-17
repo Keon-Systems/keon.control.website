@@ -272,7 +272,7 @@ export function mockReformArtifacts(): ReformArtifact[] {
       authorId: "contributor-alpha",
       epochRef: "epoch-2026-q1",
       createdAt: "2026-03-08T12:00:00Z",
-      lineageAnchors: ["rhid:deliberation:delib-001-anchor-a1b2c3d4"],
+      lineageAnchors: ["rhid:deliberation:a1b2c3d4-e5f6-0001-a1b2-c3d4e5f6a7b8"],
       contentHash: "sha256:a3f7c9e1d4b6a8f0e2c4d6a8b0e2f4a6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6",
       status: "hosted",
     },
@@ -284,8 +284,8 @@ export function mockReformArtifacts(): ReformArtifact[] {
       epochRef: "epoch-2026-q1",
       createdAt: "2026-03-09T15:30:00Z",
       lineageAnchors: [
-        "rhid:deliberation:delib-002-anchor-b2c3d4e5",
-        "rhid:reform:reform-001-anchor-c3d4e5f6",
+        "rhid:deliberation:b2c3d4e5-f6a7-0002-b2c3-d4e5f6a7b8c9",
+        "rhid:reform:c3d4e5f6-a7b8-0001-c3d4-e5f6a7b8c9d0",
       ],
       contentHash: "sha256:b4e8d0f2a6c8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8",
       status: "hosted",
@@ -308,7 +308,7 @@ export function mockReformArtifacts(): ReformArtifact[] {
       authorId: "contributor-alpha",
       epochRef: "epoch-2025-q4",
       createdAt: "2025-12-16T09:00:00Z",
-      lineageAnchors: ["rhid:deliberation:delib-004-anchor-d4e5f6a7"],
+      lineageAnchors: ["rhid:deliberation:d4e5f6a7-b8c9-0004-d4e5-f6a7b8c9d0e1"],
       contentHash: "sha256:d6a0f2b4c8e0a2b4d6c8e0a2b4d6f8a0c2e4b6d8f0a2c4e6b8d0a2c4e6f8a0",
       status: "superseded",
     },
@@ -319,7 +319,7 @@ export function mockReformArtifacts(): ReformArtifact[] {
       authorId: "contributor-gamma",
       epochRef: "epoch-2026-q1",
       createdAt: "2026-03-02T08:00:00Z",
-      lineageAnchors: ["rhid:deliberation:delib-005-anchor-e5f6a7b8"],
+      lineageAnchors: ["rhid:deliberation:e5f6a7b8-c9d0-0005-e5f6-a7b8c9d0e1f2"],
       contentHash: "sha256:e7b1a3c5d9f1b3a5c7e9d1b3a5f7c9e1d3b5a7f9c1e3d5b7a9f1c3e5d7b9a1",
       status: "hosted",
     },
@@ -379,7 +379,7 @@ export function mockReformLegitimacyAssessments(): ReformLegitimacyAssessment[] 
         "AlternativeCoverage dimension scored below 0.70 threshold; flagged for supplementary review.",
         "All other dimensions exceed minimum legitimacy thresholds.",
       ],
-      lineageAnchors: ["rhid:reform:reform-001-anchor-c3d4e5f6"],
+      lineageAnchors: ["rhid:reform:c3d4e5f6-a7b8-0001-c3d4-e5f6a7b8c9d0"],
     },
     {
       id: "legit-002",
@@ -423,8 +423,8 @@ export function mockReformLegitimacyAssessments(): ReformLegitimacyAssessment[] 
         "Recommend supplementary deliberation session before disposition upgrade.",
       ],
       lineageAnchors: [
-        "rhid:reform:reform-002-anchor-d4e5f6a7",
-        "rhid:deliberation:delib-002-anchor-b2c3d4e5",
+        "rhid:reform:d4e5f6a7-b8c9-0002-d4e5-f6a7b8c9d0e1",
+        "rhid:deliberation:b2c3d4e5-f6a7-0002-b2c3-d4e5f6a7b8c9",
       ],
     },
     {
@@ -467,7 +467,7 @@ export function mockReformLegitimacyAssessments(): ReformLegitimacyAssessment[] 
         "All dimensions exceed minimum legitimacy thresholds.",
         "Artifact recommended for sustained hosting status.",
       ],
-      lineageAnchors: ["rhid:deliberation:delib-005-anchor-e5f6a7b8"],
+      lineageAnchors: ["rhid:deliberation:e5f6a7b8-c9d0-0005-e5f6-a7b8c9d0e1f2"],
     },
   ];
 }
