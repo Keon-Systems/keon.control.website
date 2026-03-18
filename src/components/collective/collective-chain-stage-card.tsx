@@ -55,10 +55,12 @@ const TONE_BADGE_VARIANT: Record<PresentationTone, "healthy" | "warning" | "crit
 interface CollectiveChainStageCardProps {
   readonly node: CollectiveChainNode;
   readonly isFocused: boolean;
+  readonly isDimmed?: boolean;
+  readonly isGuidedMissing?: boolean;
   readonly onSelect: (nodeId: string) => void;
 }
 
-export function CollectiveChainStageCard({ node, isFocused, onSelect }: CollectiveChainStageCardProps) {
+export function CollectiveChainStageCard({ node, isFocused, isDimmed, isGuidedMissing, onSelect }: CollectiveChainStageCardProps) {
   const Icon = STAGE_ICONS[node.stage];
   const stageLabel = getCollectiveChainStageLabel(node.stage);
 
@@ -66,8 +68,13 @@ export function CollectiveChainStageCard({ node, isFocused, onSelect }: Collecti
     return (
       <Panel
         className={cn(
-          "w-48 shrink-0 opacity-40 border-dashed cursor-default",
+          "w-48 shrink-0 border-dashed cursor-default",
           "border-[--tungsten]",
+          // In guided mode: guided-focused missing stage gets distinct treatment
+          isGuidedMissing
+            ? "opacity-70 border-[--reactor-blue]/40 ring-1 ring-[--reactor-blue]/20"
+            : "opacity-40",
+          isDimmed && !isGuidedMissing && "opacity-20",
         )}
       >
         <PanelContent className="p-3">
@@ -92,11 +99,12 @@ export function CollectiveChainStageCard({ node, isFocused, onSelect }: Collecti
     <Panel
       glow={isFocused}
       className={cn(
-        "w-48 shrink-0 cursor-pointer transition-all duration-100",
+        "w-48 shrink-0 cursor-pointer transition-all duration-200",
         isPreparedEffect
           ? "border-dashed border-[--safety-orange]/50"
           : TONE_BORDER[node.stateTone],
         isFocused && "ring-1 ring-[--reactor-glow]/40 shadow-[0_0_8px_rgba(69,162,158,0.25)]",
+        isDimmed && "opacity-30",
       )}
       onClick={() => onSelect(node.id)}
     >

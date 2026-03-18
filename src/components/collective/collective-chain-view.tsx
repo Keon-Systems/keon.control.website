@@ -1,16 +1,19 @@
 "use client";
 
 import type { CollectiveChainDetail, CollectiveChainEdge, CollectiveChainNode } from "@/lib/collective/chain.dto";
+import { COLLECTIVE_CHAIN_STAGES } from "@/lib/collective/chain.normalization";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CollectiveChainDetailRail } from "./collective-chain-detail-rail";
 import { CollectiveChainEdgeConnector } from "./collective-chain-edge";
 import { CollectiveChainEmptyState } from "./collective-chain-empty-state";
+import { CollectiveChainGuidedPanel, GUIDED_CONTENT } from "./collective-chain-guided-panel";
 import { CollectiveChainPartialState } from "./collective-chain-partial-state";
 import { CollectiveChainStageCard } from "./collective-chain-stage-card";
 import { CollectiveChainOnboarding } from "./collective-chain-onboarding";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelContent, PanelHeader, PanelTitle, PanelDescription } from "@/components/ui/panel";
+import { Play, RotateCcw } from "lucide-react";
 
 interface CollectiveChainViewProps {
   readonly detail: CollectiveChainDetail | null;
@@ -27,6 +30,7 @@ function findEdgeBetween(
 }
 
 const ONBOARDING_STORAGE_KEY = "collective-chain-onboarding-dismissed";
+const GUIDED_TOUR_DISMISSED_KEY = "collective-chain-guided-tour-dismissed";
 
 function readOnboardingDismissed(): boolean {
   try {
@@ -36,20 +40,69 @@ function readOnboardingDismissed(): boolean {
   }
 }
 
+function readGuidedTourDismissed(): boolean {
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(GUIDED_TOUR_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function CollectiveChainView({ detail, isLoading, fixtureName }: CollectiveChainViewProps) {
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(detail?.focusedNodeId ?? null);
   const [showOnboarding, setShowOnboarding] = useState(true);
+
+  // Guided tour state
+  const [isGuidedMode, setIsGuidedMode] = useState(false);
+  const [guidedStepIndex, setGuidedStepIndex] = useState(0);
+  const [dismissedGuidedMode, setDismissedGuidedMode] = useState(false);
+  const stageCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Hydrate from localStorage after mount to avoid SSR mismatch
   useEffect(() => {
     if (readOnboardingDismissed()) {
       setShowOnboarding(false);
     }
+    if (readGuidedTourDismissed()) {
+      setDismissedGuidedMode(true);
+    }
   }, []);
 
+  // Keyboard support: arrow keys and Escape during guided mode
+  useEffect(() => {
+    if (!isGuidedMode) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setGuidedStepIndex((prev) => Math.min(prev + 1, GUIDED_CONTENT.length - 1));
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setGuidedStepIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setIsGuidedMode(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isGuidedMode]);
+
+  // Auto-scroll active stage into view during guided mode
+  useEffect(() => {
+    if (!isGuidedMode) return;
+    const el = stageCardRefs.current.get(guidedStepIndex);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [isGuidedMode, guidedStepIndex]);
+
   const handleSelectNode = useCallback((nodeId: string) => {
+    // In guided mode, clicking a card does not change focus — tour controls it
+    if (isGuidedMode) return;
     setFocusedNodeId((prev) => (prev === nodeId ? null : nodeId));
-  }, []);
+  }, [isGuidedMode]);
 
   const handleDismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
@@ -58,6 +111,31 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
     } catch {
       // Storage unavailable — dismiss is session-only, which is fine
     }
+  }, []);
+
+  const handleStartGuidedTour = useCallback(() => {
+    setIsGuidedMode(true);
+    setGuidedStepIndex(0);
+    // Hide onboarding accordion while guided mode is active
+    setShowOnboarding(false);
+  }, []);
+
+  const handleExitGuidedTour = useCallback(() => {
+    setIsGuidedMode(false);
+    setDismissedGuidedMode(true);
+    try {
+      localStorage.setItem(GUIDED_TOUR_DISMISSED_KEY, "1");
+    } catch {
+      // Storage unavailable
+    }
+  }, []);
+
+  const handleGuidedNext = useCallback(() => {
+    setGuidedStepIndex((prev) => Math.min(prev + 1, GUIDED_CONTENT.length - 1));
+  }, []);
+
+  const handleGuidedBack = useCallback(() => {
+    setGuidedStepIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
   if (isLoading) {
@@ -81,6 +159,12 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
 
   const presentCount = view.completeness.presentStages.length;
 
+  // Guided mode: determine which stage is currently spotlighted
+  const guidedStage = isGuidedMode ? COLLECTIVE_CHAIN_STAGES[guidedStepIndex] : null;
+  const guidedStageIsPresent = guidedStage
+    ? view.completeness.presentStages.includes(guidedStage)
+    : false;
+
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -95,9 +179,39 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
               <Badge variant="neutral">MOCK DATA</Badge>
             )}
           </div>
-          <PanelDescription>
-            Read-only observation of the constitutional pipeline
-          </PanelDescription>
+          <div className="flex items-center gap-3">
+            {/* Guided tour entrypoint */}
+            {isGuidedMode ? (
+              <button
+                type="button"
+                onClick={handleExitGuidedTour}
+                className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[--safety-orange] hover:text-[--flash] transition-colors"
+              >
+                Exit Tour
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStartGuidedTour}
+                className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[--reactor-blue] hover:text-[--reactor-glow] transition-colors"
+              >
+                {dismissedGuidedMode ? (
+                  <>
+                    <RotateCcw className="h-3 w-3" />
+                    Restart Tour
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-3 w-3" />
+                    Start Guided Tour
+                  </>
+                )}
+              </button>
+            )}
+            <PanelDescription>
+              Read-only observation of the constitutional pipeline
+            </PanelDescription>
+          </div>
         </PanelHeader>
       </Panel>
 
@@ -118,17 +232,39 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
                     : null;
                   const showEdge = index < view.nodes.length - 1;
 
+                  // Guided mode spotlight logic
+                  const isGuidedFocused = isGuidedMode && node.stage === guidedStage;
+                  const isDimmed = isGuidedMode && !isGuidedFocused;
+                  const isGuidedMissing = isGuidedFocused && !node.isPresent;
+
                   return (
-                    <div key={node.id} className="flex items-start">
+                    <div
+                      key={node.id}
+                      className="flex items-start"
+                      ref={(el) => {
+                        if (el) {
+                          stageCardRefs.current.set(index, el);
+                        } else {
+                          stageCardRefs.current.delete(index);
+                        }
+                      }}
+                    >
                       <CollectiveChainStageCard
                         node={node}
-                        isFocused={focusedNodeId === node.id}
+                        isFocused={isGuidedFocused || (!isGuidedMode && focusedNodeId === node.id)}
+                        isDimmed={isDimmed}
+                        isGuidedMissing={isGuidedMissing}
                         onSelect={handleSelectNode}
                       />
                       {showEdge && (
-                        <CollectiveChainEdgeConnector
-                          edge={node.isPresent && nextNode?.isPresent ? edge : null}
-                        />
+                        <div className={cn(
+                          "transition-opacity duration-200",
+                          isDimmed && "opacity-30",
+                        )}>
+                          <CollectiveChainEdgeConnector
+                            edge={node.isPresent && nextNode?.isPresent ? edge : null}
+                          />
+                        </div>
                       )}
                     </div>
                   );
@@ -143,22 +279,46 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
           </p>
         </div>
 
-        {/* Right rail: detail + onboarding */}
+        {/* Right rail: guided panel OR detail + onboarding */}
         <div className="hidden lg:flex lg:w-80 lg:flex-col lg:gap-4 lg:shrink-0">
-          <CollectiveChainDetailRail node={focusedNode} />
-          {showOnboarding && (
-            <CollectiveChainOnboarding onDismiss={handleDismissOnboarding} />
+          {isGuidedMode ? (
+            <CollectiveChainGuidedPanel
+              stepIndex={guidedStepIndex}
+              isStagePresentInChain={guidedStageIsPresent}
+              onNext={handleGuidedNext}
+              onBack={handleGuidedBack}
+              onExit={handleExitGuidedTour}
+            />
+          ) : (
+            <>
+              <CollectiveChainDetailRail node={focusedNode} />
+              {showOnboarding && (
+                <CollectiveChainOnboarding onDismiss={handleDismissOnboarding} />
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Mobile detail: below chain */}
+      {/* Mobile: guided panel or detail below chain */}
       <div className="lg:hidden">
-        <CollectiveChainDetailRail node={focusedNode} />
-        {showOnboarding && (
-          <div className="mt-4">
-            <CollectiveChainOnboarding onDismiss={handleDismissOnboarding} />
-          </div>
+        {isGuidedMode ? (
+          <CollectiveChainGuidedPanel
+            stepIndex={guidedStepIndex}
+            isStagePresentInChain={guidedStageIsPresent}
+            onNext={handleGuidedNext}
+            onBack={handleGuidedBack}
+            onExit={handleExitGuidedTour}
+          />
+        ) : (
+          <>
+            <CollectiveChainDetailRail node={focusedNode} />
+            {showOnboarding && (
+              <div className="mt-4">
+                <CollectiveChainOnboarding onDismiss={handleDismissOnboarding} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
