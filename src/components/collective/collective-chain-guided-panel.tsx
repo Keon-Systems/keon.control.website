@@ -2,9 +2,9 @@
 
 import type { CollectiveChainStage } from "@/lib/collective/chain.dto";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
-import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ui/panel";
+import { Panel, PanelContent } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────
@@ -105,7 +105,7 @@ interface CollectiveChainGuidedPanelProps {
 }
 
 // ──────────────────────────────────────────────
-// Component
+// Component — Full-width single-lane layout
 // ──────────────────────────────────────────────
 
 export function CollectiveChainGuidedPanel({
@@ -124,32 +124,29 @@ export function CollectiveChainGuidedPanel({
 
   return (
     <Panel className="w-full border-[--reactor-blue]/30">
-      <PanelHeader>
-        <div className="flex items-center gap-2">
-          <PanelTitle>Guided Tour</PanelTitle>
-          <Badge variant="neutral">
-            {stepIndex + 1} of {TOTAL_STEPS}
-          </Badge>
-        </div>
-        <button
-          type="button"
-          onClick={onExit}
-          className="text-[--tungsten] hover:text-[--steel] transition-colors"
-          aria-label="Exit guided tour"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </PanelHeader>
-
-      <PanelContent className="space-y-3 p-3">
-        {/* Stage name */}
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold font-mono text-[--flash]">
-            {stageLabel}
-          </h3>
-          {!isStagePresentInChain && (
-            <Badge variant="offline">NOT PRESENT</Badge>
-          )}
+      <PanelContent className="space-y-4 p-4">
+        {/* Combined header: STEP N OF 8 — STAGE NAME */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[--steel]">
+              Step {stepIndex + 1} of {TOTAL_STEPS}
+            </span>
+            <span className="text-[--tungsten]">&mdash;</span>
+            <h3 className="text-sm font-semibold font-mono uppercase tracking-wide text-[--flash]">
+              {stageLabel}
+            </h3>
+            {!isStagePresentInChain && (
+              <Badge variant="offline">NOT PRESENT</Badge>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onExit}
+            className="text-[--tungsten] hover:text-[--steel] transition-colors p-1"
+            aria-label="Exit guided tour"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Missing stage notice */}
@@ -162,34 +159,32 @@ export function CollectiveChainGuidedPanel({
           </div>
         )}
 
-        {/* Meaning */}
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
-            Meaning
-          </p>
-          <p className="text-xs font-mono text-[--flash] leading-relaxed">
-            {content.meaning}
-          </p>
-        </div>
-
-        {/* Why it matters */}
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
-            Why it matters
-          </p>
-          <p className="text-xs font-mono text-[--flash] leading-relaxed">
-            {content.whyItMatters}
-          </p>
-        </div>
-
-        {/* Connection to adjacent stages */}
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
-            Connection
-          </p>
-          <p className="text-xs font-mono text-[--flash] leading-relaxed">
-            {content.connection}
-          </p>
+        {/* Content grid — horizontal on desktop, stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
+              Meaning
+            </p>
+            <p className="text-xs font-mono text-[--flash] leading-relaxed">
+              {content.meaning}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
+              Why it matters
+            </p>
+            <p className="text-xs font-mono text-[--flash] leading-relaxed">
+              {content.whyItMatters}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel] mb-1">
+              Connection
+            </p>
+            <p className="text-xs font-mono text-[--flash] leading-relaxed">
+              {content.connection}
+            </p>
+          </div>
         </div>
 
         {/* Constitutional note (prepared effect) */}
@@ -201,42 +196,45 @@ export function CollectiveChainGuidedPanel({
           </div>
         )}
 
-        {/* Tour closing statement on final step */}
+        {/* Tour closing — system insight + constitutional statement */}
         {isLast && (
-          <div className="border-t border-[--tungsten]/30 pt-3">
-            <p className="text-[10px] font-mono font-semibold text-[--safety-orange]">
+          <div className="border-t border-[--tungsten]/30 pt-3 space-y-2">
+            <p className="text-[11px] font-mono text-[--steel] text-center leading-relaxed">
+              This system lets you trace how authority forms — without ever granting it accidentally.
+            </p>
+            <p className="text-[10px] font-mono font-semibold text-[--safety-orange] text-center">
               Viewing a chain does not authorize action.
             </p>
           </div>
         )}
 
-        {/* Step controls */}
-        <div className="flex items-center justify-between border-t border-[--tungsten]/30 pt-3">
+        {/* Navigation controls — centered, prominent */}
+        <div className="flex items-center justify-center gap-6 border-t border-[--tungsten]/30 pt-4">
           <button
             type="button"
             onClick={onBack}
             disabled={isFirst}
             className={cn(
-              "inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-sm transition-colors",
+              "inline-flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 rounded-sm transition-colors",
               isFirst
                 ? "text-[--tungsten]/40 cursor-not-allowed"
                 : "text-[--steel] hover:text-[--flash] hover:bg-[--tungsten]/10",
             )}
             aria-label="Previous stage"
           >
-            <ArrowLeft className="h-3 w-3" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </button>
 
           {/* Progress dots */}
-          <div className="flex items-center gap-1" aria-hidden>
+          <div className="flex items-center gap-1.5" aria-hidden>
             {Array.from({ length: TOTAL_STEPS }, (_, i) => (
               <div
                 key={i}
                 className={cn(
-                  "h-1 w-1 rounded-full transition-colors",
+                  "h-1.5 w-1.5 rounded-full transition-colors",
                   i === stepIndex
-                    ? "bg-[--reactor-glow]"
+                    ? "bg-[--reactor-glow] shadow-[0_0_4px_rgba(102,252,241,0.5)]"
                     : i < stepIndex
                       ? "bg-[--reactor-blue]/50"
                       : "bg-[--tungsten]/40",
@@ -249,20 +247,21 @@ export function CollectiveChainGuidedPanel({
             <button
               type="button"
               onClick={onExit}
-              className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-sm text-[--reactor-glow] hover:bg-[--reactor-blue]/10 transition-colors"
+              className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold px-4 py-1.5 rounded-sm border border-[--reactor-glow]/50 bg-[--reactor-blue]/15 text-[--reactor-glow] hover:bg-[--reactor-blue]/25 hover:border-[--reactor-glow]/70 transition-colors"
               aria-label="Finish tour"
             >
-              Finish
+              <Check className="h-3.5 w-3.5" />
+              Finish Tour
             </button>
           ) : (
             <button
               type="button"
               onClick={onNext}
-              className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-sm text-[--steel] hover:text-[--flash] hover:bg-[--tungsten]/10 transition-colors"
+              className="inline-flex items-center gap-1.5 font-mono text-xs font-medium px-4 py-1.5 rounded-sm border border-[--reactor-blue]/50 bg-[--reactor-blue]/10 text-[--reactor-glow] hover:bg-[--reactor-blue]/20 hover:border-[--reactor-glow]/60 transition-colors group"
               aria-label="Next stage"
             >
               Next
-              <ArrowRight className="h-3 w-3" />
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </button>
           )}
         </div>
