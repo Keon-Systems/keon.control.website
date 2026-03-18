@@ -150,7 +150,7 @@ export function CollectiveChainStageCard({ node, isFocused, isDimmed, isGuidedMi
 
         {isPreparedEffect && eligibilityStatus && (
           <p className={cn(
-            "text-[9px] font-mono leading-tight",
+            "mt-1 text-[9px] font-mono leading-tight",
             eligibilityStatus === "eligible"
               ? "text-[--reactor-glow]/80"
               : "text-[--ballistic-red]/80",

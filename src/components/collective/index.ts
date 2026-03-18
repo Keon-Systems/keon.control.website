@@ -9,6 +9,7 @@ export { CollectiveChainPartialState } from "./collective-chain-partial-state";
 export { CollectiveChainStageCard } from "./collective-chain-stage-card";
 export { CollectiveChainView } from "./collective-chain-view";
 export { CollectiveStatusHeader } from "./collective-status-header";
+export { ExecutionEligibilityPanel } from "./execution-eligibility-panel";
 export { DeliberationDetailView } from "./deliberation-detail-view";
 export { DeliberationTimeline } from "./deliberation-timeline";
 export { DispositionBadge } from "./disposition-badge";
