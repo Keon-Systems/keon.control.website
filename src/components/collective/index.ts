@@ -1,6 +1,13 @@
 export { ArtifactInspector } from "./artifact-inspector";
 export { CivicHealthPanel } from "./civic-health-panel";
 export { CollectiveBanner } from "./collective-banner";
+export { CollectiveChainDetailRail } from "./collective-chain-detail-rail";
+export { CollectiveChainEdgeConnector } from "./collective-chain-edge";
+export { CollectiveChainEmptyState } from "./collective-chain-empty-state";
+export { CollectiveChainOnboarding } from "./collective-chain-onboarding";
+export { CollectiveChainPartialState } from "./collective-chain-partial-state";
+export { CollectiveChainStageCard } from "./collective-chain-stage-card";
+export { CollectiveChainView } from "./collective-chain-view";
 export { CollectiveStatusHeader } from "./collective-status-header";
 export { DeliberationDetailView } from "./deliberation-detail-view";
 export { DeliberationTimeline } from "./deliberation-timeline";
