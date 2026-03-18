@@ -3,7 +3,8 @@ import type {
   ExecutionEligibilityReasonCode,
   ExecutionEligibilityView,
 } from "./eligibility.dto";
-import { buildEligibilityPresentation, getMockEligibilityView } from "./eligibility.mocks";
+import { buildEligibilityPresentation } from "./eligibility.dto";
+import { getMockEligibilityView } from "./eligibility.mocks";
 
 // Evaluation context — internal, explicit, extensible
 export interface EligibilityEvaluationContext {
@@ -94,21 +95,13 @@ export function createMockExecutionEligibilityRepository(): ExecutionEligibility
   return {
     async evaluate(preparedEffectId: string): Promise<ExecutionEligibilityView> {
       const fixture = getMockEligibilityView(preparedEffectId);
-      if (fixture) {
-        return {
-          ...fixture,
-          evaluatedAtUtc: new Date().toISOString(),
-        };
-      }
+      if (!fixture) throw new Error(`Unknown prepared effect '${preparedEffectId}'.`);
 
-      return evaluateContext({
-        preparedEffectId,
-        activation: { exists: false, lifecycleActive: false },
-        permission: { exists: false, lifecycleValid: false, expired: false },
-        delegation: { exists: false, lifecycleValid: false, revoked: false },
-        scopeAligned: false,
-        preparedEffectReady: false,
-      });
+      // Return a fresh copy with updated timestamp to prove recomputation
+      return {
+        ...fixture,
+        evaluatedAtUtc: new Date().toISOString(),
+      };
     },
   };
 }

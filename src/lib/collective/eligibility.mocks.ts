@@ -1,38 +1,9 @@
-import type {
-  ExecutionEligibilityView,
-  ExecutionEligibilityReasonCode,
-} from "./eligibility.dto";
-import type { PresentationTone } from "./dto";
+import type { ExecutionEligibilityView } from "./eligibility.dto";
+import { buildEligibilityPresentation } from "./eligibility.dto";
 
-// Hard failures: active violations of authority constraints.
-// Scope mismatch is a boundary violation, not an incomplete condition.
-const HARD_FAILURE_CODES: ReadonlySet<ExecutionEligibilityReasonCode> = new Set([
-  "delegation_invalid",
-  "delegation_revoked",
-  "permission_invalid",
-  "permission_expired",
-  "scope_mismatch",
-  "upstream_revoked",
-]);
-
-export function resolveEligibilityTone(
-  status: "eligible" | "not_eligible",
-  reasons: readonly { code: ExecutionEligibilityReasonCode }[],
-): PresentationTone {
-  if (status === "eligible") return "success";
-  const hasHardFailure = reasons.some((r) => HARD_FAILURE_CODES.has(r.code));
-  return hasHardFailure ? "danger" : "warning";
-}
-
-export function buildEligibilityPresentation(
-  status: "eligible" | "not_eligible",
-  reasons: readonly { code: ExecutionEligibilityReasonCode }[],
-): { label: string; tone: PresentationTone } {
-  return {
-    label: status === "eligible" ? "Eligible" : "Not Eligible",
-    tone: resolveEligibilityTone(status, reasons),
-  };
-}
+// ──────────────────────────────────────────────
+// Named fixtures
+// ──────────────────────────────────────────────
 
 export const mockEligibilityFullyEligible: ExecutionEligibilityView = {
   preparedEffectId: "prepared-effect-001",
@@ -91,6 +62,10 @@ export const mockEligibilityScopeMismatch: ExecutionEligibilityView = {
     { code: "scope_mismatch" },
   ]),
 };
+
+// ──────────────────────────────────────────────
+// Fixture lookup by preparedEffectId
+// ──────────────────────────────────────────────
 
 const eligibilityFixtures = new Map<string, ExecutionEligibilityView>([
   [mockEligibilityFullyEligible.preparedEffectId, mockEligibilityFullyEligible],
