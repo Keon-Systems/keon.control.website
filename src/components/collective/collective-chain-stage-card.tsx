@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelContent } from "@/components/ui/panel";
 import type { CollectiveChainNode, CollectiveChainStage } from "@/lib/collective/chain.dto";
+import type { ExecutionEligibilityStatus } from "@/lib/collective/eligibility.dto";
 import type { PresentationTone } from "@/lib/collective/dto";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ const TONE_ICON_COLOR: Record<PresentationTone, string> = {
   neutral: "text-[--tungsten]",
 };
 
-const TONE_BADGE_VARIANT: Record<PresentationTone, "healthy" | "warning" | "critical" | "neutral" | "offline"> = {
+export const TONE_BADGE_VARIANT: Record<PresentationTone, "healthy" | "warning" | "critical" | "neutral" | "offline"> = {
   success: "healthy",
   warning: "warning",
   danger: "critical",
@@ -57,10 +58,11 @@ interface CollectiveChainStageCardProps {
   readonly isFocused: boolean;
   readonly isDimmed?: boolean;
   readonly isGuidedMissing?: boolean;
+  readonly eligibilityStatus?: ExecutionEligibilityStatus;
   readonly onSelect: (nodeId: string) => void;
 }
 
-export function CollectiveChainStageCard({ node, isFocused, isDimmed, isGuidedMissing, onSelect }: CollectiveChainStageCardProps) {
+export function CollectiveChainStageCard({ node, isFocused, isDimmed, isGuidedMissing, eligibilityStatus, onSelect }: CollectiveChainStageCardProps) {
   const Icon = STAGE_ICONS[node.stage];
   const stageLabel = getCollectiveChainStageLabel(node.stage);
 
@@ -143,6 +145,17 @@ export function CollectiveChainStageCard({ node, isFocused, isDimmed, isGuidedMi
         {isPreparedEffect && (
           <p className="mt-2 text-[9px] font-mono text-[--safety-orange]/80 leading-tight">
             No execution authority
+          </p>
+        )}
+
+        {isPreparedEffect && eligibilityStatus && (
+          <p className={cn(
+            "mt-1 text-[9px] font-mono leading-tight",
+            eligibilityStatus === "eligible"
+              ? "text-[--reactor-glow]/80"
+              : "text-[--ballistic-red]/80",
+          )}>
+            Execution Eligibility: {eligibilityStatus === "eligible" ? "ELIGIBLE" : "NOT ELIGIBLE"}
           </p>
         )}
 
