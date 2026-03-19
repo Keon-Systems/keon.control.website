@@ -1,4 +1,4 @@
-import type { ExecutionEligibilityStatus } from "./eligibility.dto";
+import type { ExecutionEligibilityStatus, ExecutionEligibilityView } from "./eligibility.dto";
 import type { PresentationTone } from "./dto";
 
 // ──────────────────────────────────────────────
@@ -35,6 +35,24 @@ export interface InvocationAuthorityContext {
   readonly delegationId?: string;
   readonly permissionId?: string;
   readonly activationId?: string;
+}
+
+// ──────────────────────────────────────────────
+// Invocation Preview Input — unified single-object arg
+// ──────────────────────────────────────────────
+
+export interface InvocationPreviewInput {
+  readonly preparedEffect: {
+    readonly preparedRequestId: string;
+    readonly delegationGrantId: string;
+    readonly permissionGrantId: string;
+    readonly activationId: string;
+  };
+  readonly activation: { readonly activationId?: string; readonly [key: string]: unknown } | null;
+  readonly permission: { readonly grantId?: string; readonly expiresAtUtc?: string | null; readonly [key: string]: unknown } | null;
+  readonly delegation: { readonly grantId?: string; readonly [key: string]: unknown } | null;
+  readonly eligibility: ExecutionEligibilityView;
+  readonly evaluatedAtUtc: string;
 }
 
 // ──────────────────────────────────────────────
@@ -76,11 +94,11 @@ export function buildInvocationPreviewPresentation(
 
 const STATUS_SUMMARIES: Record<InvocationReadinessStatus, string> = {
   not_available:
-    "Invocation cannot be formed under current authority conditions.",
+    "This preview reflects authority conditions that are not currently available.",
   constrained:
-    "Invocation can be formed but remains constrained by authority requirements.",
+    "This preview reflects authority conditions that remain constrained by requirements.",
   ready:
-    "All conditions to form a governed invocation are satisfied.",
+    "All authority conditions reflected in this preview are satisfied.",
 };
 
 export function buildInvocationPreviewSummary(

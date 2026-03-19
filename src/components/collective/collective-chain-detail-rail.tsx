@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { DataValue } from "@/components/ui/data-value";
@@ -9,7 +8,13 @@ import { ExecutionEligibilityPanel } from "@/components/collective/execution-eli
 import { InvocationPreviewPanel } from "@/components/collective/invocation-preview-panel";
 import type { CollectiveChainNode } from "@/lib/collective/chain.dto";
 import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
-import { createExecutionEligibilityRepository } from "@/lib/collective/repositories";
+import {
+  createAgentPermissionRepository,
+  createAuthorityActivationRepository,
+  createDelegatedAuthorityRepository,
+  createExecutionEligibilityRepository,
+  createPreparedEffectRepository,
+} from "@/lib/collective/repositories";
 import { createInvocationPreviewRepository } from "@/lib/collective";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
 import { cn } from "@/lib/utils";
@@ -97,29 +102,24 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
     enabled: Boolean(preparedEffect.data?.delegationGrantId),
     staleTime: 0,
   });
-  const invocationPreview = useMemo(() => {
-    if (!preparedEffect.data || !eligibility.data) {
-      return null;
-    }
-
-    return createInvocationPreviewRepository().preview({
-      preparedEffect: preparedEffect.data,
-      activation: activation.data ?? null,
-      permission: permission.data ?? null,
-      delegation: delegation.data ?? null,
-      eligibility: eligibility.data,
-    });
-  }, [activation.data, delegation.data, eligibility.data, permission.data, preparedEffect.data]);
-
   const invocationPreview = useQuery({
     queryKey: preparedEffectId
       ? collectiveObservabilityQueryKeys.invocationPreview.detail(preparedEffectId)
       : ["collective", "invocation-preview", "detail", "absent"] as const,
     queryFn: () =>
-      createInvocationPreviewRepository().preview(
-        preparedEffectId!,
-        eligibility.data!,
-      ),
+      createInvocationPreviewRepository().preview({
+        preparedEffect: {
+          preparedRequestId: preparedEffectId!,
+          delegationGrantId: preparedEffect.data?.delegationGrantId ?? "",
+          permissionGrantId: preparedEffect.data?.permissionGrantId ?? "",
+          activationId: preparedEffect.data?.activationId ?? "",
+        },
+        activation: activation.data ?? null,
+        permission: permission.data ?? null,
+        delegation: delegation.data ?? null,
+        eligibility: eligibility.data!,
+        evaluatedAtUtc: eligibility.data!.evaluatedAtUtc,
+      }),
     enabled: Boolean(preparedEffectId) && Boolean(eligibility.data),
     staleTime: 0,
   });

@@ -1,6 +1,6 @@
 import type { ExecutionEligibilityView } from "./eligibility.dto";
 import type {
-  InvocationAuthorityContext,
+  InvocationPreviewInput,
   InvocationPreviewView,
   InvocationReadinessStatus,
   InvocationRequirement,
@@ -57,8 +57,20 @@ const REQUIREMENT_ORDER: readonly InvocationRequirementCode[] = [
 
 function deriveRequirements(
   eligibility: ExecutionEligibilityView,
+  input: InvocationPreviewInput,
 ): readonly InvocationRequirement[] {
   const failedCodes = new Set<string>(eligibility.reasons.map((r) => r.code));
+
+  // When eligibility is eligible (no reason codes), also check entity state directly.
+  // This allows the "constrained" path to be reached when entities have degraded
+  // since the eligibility was evaluated (e.g. permission expired by evaluatedAtUtc).
+  if (eligibility.status === "eligible" && input.permission?.expiresAtUtc) {
+    const expiresAt = new Date(input.permission.expiresAtUtc);
+    const evaluatedAt = new Date(input.evaluatedAtUtc);
+    if (expiresAt <= evaluatedAt) {
+      failedCodes.add("permission_expired");
+    }
+  }
 
   return REQUIREMENT_ORDER.map((code) => {
     const failureCodes = REQUIREMENT_FAILURE_CODES[code];
@@ -74,12 +86,6 @@ function deriveRequirements(
 
 // ──────────────────────────────────────────────
 // Status resolution
-//
-// Current eligibility model: eligible → empty reasons → all satisfied → ready.
-// The "constrained" path exists for future eligibility models that surface
-// partial authority or time-bound constraints where eligibility is met but
-// requirements remain unsatisfied. Until then, only "not_available" and
-// "ready" are reachable from live data.
 // ──────────────────────────────────────────────
 
 function resolveReadinessStatus(
@@ -96,21 +102,22 @@ function resolveReadinessStatus(
 // ──────────────────────────────────────────────
 
 export interface InvocationPreviewRepository {
-  preview(
-    preparedEffectId: string,
-    eligibility: ExecutionEligibilityView,
-    authorityContext?: InvocationAuthorityContext,
-  ): Promise<InvocationPreviewView>;
+  preview(input: InvocationPreviewInput): Promise<InvocationPreviewView>;
 }
 
 export function createInvocationPreviewRepository(): InvocationPreviewRepository {
   return {
-    async preview(
-      preparedEffectId: string,
-      eligibility: ExecutionEligibilityView,
-      authorityContext: InvocationAuthorityContext = {},
-    ): Promise<InvocationPreviewView> {
-      const requirements = deriveRequirements(eligibility);
+    async preview(input: InvocationPreviewInput): Promise<InvocationPreviewView> {
+      const { preparedEffect, eligibility } = input;
+      const preparedEffectId = preparedEffect.preparedRequestId;
+
+      const authorityContext = {
+        delegationId: preparedEffect.delegationGrantId || undefined,
+        permissionId: preparedEffect.permissionGrantId || undefined,
+        activationId: preparedEffect.activationId || undefined,
+      };
+
+      const requirements = deriveRequirements(eligibility, input);
       const status = resolveReadinessStatus(eligibility, requirements);
 
       return {
@@ -120,7 +127,7 @@ export function createInvocationPreviewRepository(): InvocationPreviewRepository
         requirements,
         authorityContext,
         eligibilityStatus: eligibility.status,
-        evaluatedAtUtc: eligibility.evaluatedAtUtc,
+        evaluatedAtUtc: input.evaluatedAtUtc,
         statusPresentation: buildInvocationPreviewPresentation(status),
       };
     },
