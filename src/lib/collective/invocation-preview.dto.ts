@@ -1,5 +1,11 @@
+import type {
+  AgentPermissionGrantDetail,
+  AuthorityActivationDetail,
+  DelegatedAuthorityGrantDetail,
+  PreparedEffectRequestDetail,
+  PresentationTone,
+} from "./dto";
 import type { ExecutionEligibilityStatus, ExecutionEligibilityView } from "./eligibility.dto";
-import type { PresentationTone } from "./dto";
 
 // ──────────────────────────────────────────────
 // Readiness status — derived from eligibility + requirements
@@ -42,15 +48,10 @@ export interface InvocationAuthorityContext {
 // ──────────────────────────────────────────────
 
 export interface InvocationPreviewInput {
-  readonly preparedEffect: {
-    readonly preparedRequestId: string;
-    readonly delegationGrantId: string;
-    readonly permissionGrantId: string;
-    readonly activationId: string;
-  };
-  readonly activation: { readonly activationId?: string; readonly [key: string]: unknown } | null;
-  readonly permission: { readonly grantId?: string; readonly expiresAtUtc?: string | null; readonly [key: string]: unknown } | null;
-  readonly delegation: { readonly grantId?: string; readonly [key: string]: unknown } | null;
+  readonly preparedEffect: PreparedEffectRequestDetail;
+  readonly activation: AuthorityActivationDetail | null;
+  readonly permission: AgentPermissionGrantDetail | null;
+  readonly delegation: DelegatedAuthorityGrantDetail | null;
   readonly eligibility: ExecutionEligibilityView;
   readonly evaluatedAtUtc: string;
 }

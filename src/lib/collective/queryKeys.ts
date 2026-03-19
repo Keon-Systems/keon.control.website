@@ -64,4 +64,9 @@ export const collectiveObservabilityQueryKeys = {
     detail: (preparedEffectId: string) =>
       ["collective", "invocation-preview", "detail", preparedEffectId] as const,
   },
+  invocationDescriptor: {
+    all: ["collective", "invocation-descriptor"] as const,
+    detail: (preparedEffectId: string) =>
+      ["collective", "invocation-descriptor", "detail", preparedEffectId] as const,
+  },
 } as const;

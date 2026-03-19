@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CollectiveChainStage } from "@/lib/collective/chain.dto";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
@@ -13,17 +12,21 @@ import {
   createPreparedEffectRepository,
 } from "@/lib/collective/repositories";
 import { createInvocationPreviewRepository } from "@/lib/collective/invocation-preview.repositories";
+import { buildInvocationDescriptorPresentation } from "@/lib/collective/invocation-descriptor.dto";
+import { createInvocationDescriptorRepository } from "@/lib/collective/invocation-descriptor.repositories";
 import { Panel, PanelContent } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────
-// Guided content for each of the 8 canonical stages
+// Guided content for each of the guided steps
 // ──────────────────────────────────────────────
 
 type GuidedStageContent = {
-  stage: CollectiveChainStage;
+  key: CollectiveChainStage | "invocationDescriptor";
+  stage?: CollectiveChainStage;
+  title: string;
   meaning: string;
   whyItMatters: string;
   connection: string;
@@ -32,7 +35,9 @@ type GuidedStageContent = {
 
 const GUIDED_CONTENT: readonly GuidedStageContent[] = [
   {
+    key: "reform",
     stage: "reform",
+    title: getCollectiveChainStageLabel("reform"),
     meaning: "This is where proposed change enters the system.",
     whyItMatters:
       "Reforms are the origin point for constitutional change.",
@@ -40,7 +45,9 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
       "A reform may be assessed for legitimacy before anything is adopted.",
   },
   {
+    key: "legitimacy",
     stage: "legitimacy",
+    title: getCollectiveChainStageLabel("legitimacy"),
     meaning:
       "This stage evaluates whether the proposed change is sound and supportable.",
     whyItMatters:
@@ -49,7 +56,9 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
       "A legitimacy assessment can inform, but does not itself adopt, the reform.",
   },
   {
+    key: "adoption",
     stage: "adoption",
+    title: getCollectiveChainStageLabel("adoption"),
     meaning:
       "This stage records whether a proposed reform was accepted, rejected, superseded, or revoked.",
     whyItMatters: "Adoption is where reform outcomes become explicit.",
@@ -57,14 +66,18 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
       "An adopted reform may lead to downstream strategic mutation records.",
   },
   {
+    key: "mutation",
     stage: "mutation",
+    title: getCollectiveChainStageLabel("mutation"),
     meaning: "This stage records strategic state changes caused by adoption.",
     whyItMatters: "It shows what changed after a reform decision.",
     connection:
       "Mutation records consequences; they do not grant runtime authority by themselves.",
   },
   {
+    key: "delegation",
     stage: "delegation",
+    title: getCollectiveChainStageLabel("delegation"),
     meaning:
       "This stage defines bounded authority passed from one authority holder to another.",
     whyItMatters:
@@ -72,7 +85,9 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
     connection: "Delegation is upstream of permission and activation.",
   },
   {
+    key: "permission",
     stage: "permission",
+    title: getCollectiveChainStageLabel("permission"),
     meaning:
       "This stage scopes what an agent is allowed to do under a delegation.",
     whyItMatters:
@@ -80,7 +95,9 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
     connection: "Permissions must remain within delegation bounds.",
   },
   {
+    key: "activation",
     stage: "activation",
+    title: getCollectiveChainStageLabel("activation"),
     meaning:
       "This stage records whether a granted permission is eligible or active at runtime.",
     whyItMatters:
@@ -89,7 +106,9 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
       "Activation must remain within permission and delegation bounds.",
   },
   {
+    key: "preparedEffect",
     stage: "preparedEffect",
+    title: getCollectiveChainStageLabel("preparedEffect"),
     meaning:
       "This stage represents a staged effect that remains inert and non-executable from this surface.",
     whyItMatters:
@@ -98,6 +117,18 @@ const GUIDED_CONTENT: readonly GuidedStageContent[] = [
       "A prepared effect may sit at the edge of execution governance, but it is still not an execution command.",
     constitutionalNote:
       "Prepared effects are staged only. They do not carry execution authority.",
+  },
+  {
+    key: "invocationDescriptor",
+    title: "Invocation Descriptor",
+    meaning:
+      "This step records the structural shape of authority, requirements, and constraints for a prepared effect.",
+    whyItMatters:
+      "It makes invocation legible without turning structure into capability.",
+    connection:
+      "The descriptor sits beside eligibility and preview as a structural reference before lineage inspection.",
+    constitutionalNote:
+      "This defines structure, not capability.",
   },
 ];
 
@@ -129,13 +160,15 @@ export function CollectiveChainGuidedPanel({
   onExit,
 }: CollectiveChainGuidedPanelProps) {
   const content = GUIDED_CONTENT[stepIndex];
-  const showEligibility = content?.stage === "preparedEffect" && Boolean(preparedEffectId);
+  const showPreparedEffectContext =
+    Boolean(preparedEffectId)
+    && (content?.key === "preparedEffect" || content?.key === "invocationDescriptor");
   const preparedEffect = useQuery({
     queryKey: preparedEffectId
       ? collectiveObservabilityQueryKeys.preparedEffects.detail(preparedEffectId)
       : ["collective", "prepared-effects", "detail", "absent"] as const,
     queryFn: () => createPreparedEffectRepository().detail(preparedEffectId!),
-    enabled: showEligibility,
+    enabled: showPreparedEffectContext,
     staleTime: 0,
   });
   const eligibility = useQuery({
@@ -143,7 +176,7 @@ export function CollectiveChainGuidedPanel({
       ? collectiveObservabilityQueryKeys.executionEligibility.detail(preparedEffectId)
       : ["collective", "execution-eligibility", "detail", "absent"] as const,
     queryFn: () => createExecutionEligibilityRepository().evaluate(preparedEffectId!),
-    enabled: showEligibility,
+    enabled: showPreparedEffectContext,
     staleTime: 0,
   });
   const activation = useQuery({
@@ -151,7 +184,7 @@ export function CollectiveChainGuidedPanel({
       ? collectiveObservabilityQueryKeys.authorityActivations.detail(preparedEffect.data.activationId)
       : ["collective", "authority-activations", "detail", "absent"] as const,
     queryFn: () => createAuthorityActivationRepository().detail(preparedEffect.data!.activationId),
-    enabled: showEligibility && Boolean(preparedEffect.data?.activationId),
+    enabled: showPreparedEffectContext && Boolean(preparedEffect.data?.activationId),
     staleTime: 0,
   });
   const permission = useQuery({
@@ -159,7 +192,7 @@ export function CollectiveChainGuidedPanel({
       ? collectiveObservabilityQueryKeys.agentPermissions.detail(preparedEffect.data.permissionGrantId)
       : ["collective", "agent-permissions", "detail", "absent"] as const,
     queryFn: () => createAgentPermissionRepository().detail(preparedEffect.data!.permissionGrantId),
-    enabled: showEligibility && Boolean(preparedEffect.data?.permissionGrantId),
+    enabled: showPreparedEffectContext && Boolean(preparedEffect.data?.permissionGrantId),
     staleTime: 0,
   });
   const delegation = useQuery({
@@ -167,28 +200,53 @@ export function CollectiveChainGuidedPanel({
       ? collectiveObservabilityQueryKeys.delegatedAuthority.detail(preparedEffect.data.delegationGrantId)
       : ["collective", "delegated-authority", "detail", "absent"] as const,
     queryFn: () => createDelegatedAuthorityRepository().detail(preparedEffect.data!.delegationGrantId),
-    enabled: showEligibility && Boolean(preparedEffect.data?.delegationGrantId),
+    enabled: showPreparedEffectContext && Boolean(preparedEffect.data?.delegationGrantId),
     staleTime: 0,
   });
-  const invocationPreview = useMemo(() => {
-    if (!preparedEffect.data || !eligibility.data) {
-      return null;
-    }
-
-    return createInvocationPreviewRepository().preview({
-      preparedEffect: preparedEffect.data,
-      activation: activation.data ?? null,
-      permission: permission.data ?? null,
-      delegation: delegation.data ?? null,
-      eligibility: eligibility.data,
-    });
-  }, [activation.data, delegation.data, eligibility.data, permission.data, preparedEffect.data]);
+  const invocationPreview = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.invocationPreview.detail(preparedEffectId)
+      : ["collective", "invocation-preview", "detail", "absent"] as const,
+    queryFn: () =>
+      createInvocationPreviewRepository().preview({
+        preparedEffect: preparedEffect.data!,
+        activation: activation.data ?? null,
+        permission: permission.data ?? null,
+        delegation: delegation.data ?? null,
+        eligibility: eligibility.data!,
+        evaluatedAtUtc: eligibility.data!.evaluatedAtUtc,
+      }),
+    enabled: showPreparedEffectContext && Boolean(preparedEffect.data) && Boolean(eligibility.data),
+    staleTime: 0,
+  });
+  const invocationDescriptor = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.invocationDescriptor.detail(preparedEffectId)
+      : ["collective", "invocation-descriptor", "detail", "absent"] as const,
+    queryFn: () =>
+      createInvocationDescriptorRepository().describe({
+        preparedEffect: preparedEffect.data!,
+        activation: activation.data ?? null,
+        permission: permission.data ?? null,
+        delegation: delegation.data ?? null,
+        eligibility: eligibility.data!,
+        preview: invocationPreview.data!,
+      }),
+    enabled:
+      showPreparedEffectContext
+      && Boolean(preparedEffect.data)
+      && Boolean(eligibility.data)
+      && Boolean(invocationPreview.data),
+    staleTime: 0,
+  });
 
   if (!content) return null;
 
-  const stageLabel = getCollectiveChainStageLabel(content.stage);
+  const stageLabel = content.title;
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === TOTAL_STEPS - 1;
+  const isDescriptorStep = content.key === "invocationDescriptor";
+  const stagePresent = isDescriptorStep ? Boolean(preparedEffectId) : isStagePresentInChain;
 
   return (
     <Panel className="w-full border-[--reactor-blue]/30">
@@ -203,7 +261,7 @@ export function CollectiveChainGuidedPanel({
             <h3 className="text-sm font-semibold font-mono uppercase tracking-wide text-[--flash]">
               {stageLabel}
             </h3>
-            {!isStagePresentInChain && (
+            {!stagePresent && (
               <Badge variant="offline">NOT PRESENT</Badge>
             )}
           </div>
@@ -218,7 +276,7 @@ export function CollectiveChainGuidedPanel({
         </div>
 
         {/* Missing stage notice */}
-        {!isStagePresentInChain && (
+        {!stagePresent && (
           <div className="rounded-sm border border-dashed border-[--tungsten] p-2">
             <p className="text-[10px] font-mono text-[--tungsten] leading-relaxed">
               This stage is not present in the current chain. Partial chains are
@@ -264,7 +322,7 @@ export function CollectiveChainGuidedPanel({
           </div>
         )}
 
-        {showEligibility && eligibility.data && (
+        {showPreparedEffectContext && content.key === "preparedEffect" && eligibility.data && (
           <div className="rounded-sm border border-[--tungsten]/30 p-2">
             <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel]">
               Execution Eligibility
@@ -275,13 +333,27 @@ export function CollectiveChainGuidedPanel({
           </div>
         )}
 
-        {showEligibility && invocationPreview && (
+        {showPreparedEffectContext && content.key === "preparedEffect" && invocationPreview.data && (
           <div className="rounded-sm border border-[--tungsten]/30 p-2">
             <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel]">
               Invocation Preview
             </p>
             <p className="mt-1 text-xs font-mono text-[--flash]">
-              {invocationPreview.statusPresentation.label}
+              {invocationPreview.data.statusPresentation.label}
+            </p>
+          </div>
+        )}
+
+        {showPreparedEffectContext && isDescriptorStep && invocationDescriptor.data && (
+          <div className="rounded-sm border border-[--tungsten]/30 p-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel]">
+              Invocation Descriptor
+            </p>
+            <p className="mt-1 text-xs font-mono text-[--flash]">
+              {buildInvocationDescriptorPresentation(invocationDescriptor.data.status).label}
+            </p>
+            <p className="mt-1 text-[10px] font-mono text-[--safety-orange]">
+              This defines structure, not capability.
             </p>
           </div>
         )}

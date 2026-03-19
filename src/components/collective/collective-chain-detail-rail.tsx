@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataValue } from "@/components/ui/data-value";
 import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ui/panel";
 import { ExecutionEligibilityPanel } from "@/components/collective/execution-eligibility-panel";
+import { InvocationDescriptorPanel } from "@/components/collective/invocation-descriptor-panel";
 import { InvocationPreviewPanel } from "@/components/collective/invocation-preview-panel";
 import type { CollectiveChainNode } from "@/lib/collective/chain.dto";
 import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
@@ -15,7 +16,10 @@ import {
   createExecutionEligibilityRepository,
   createPreparedEffectRepository,
 } from "@/lib/collective/repositories";
-import { createInvocationPreviewRepository } from "@/lib/collective";
+import {
+  createInvocationDescriptorRepository,
+  createInvocationPreviewRepository,
+} from "@/lib/collective";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -108,19 +112,34 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
       : ["collective", "invocation-preview", "detail", "absent"] as const,
     queryFn: () =>
       createInvocationPreviewRepository().preview({
-        preparedEffect: {
-          preparedRequestId: preparedEffectId!,
-          delegationGrantId: preparedEffect.data?.delegationGrantId ?? "",
-          permissionGrantId: preparedEffect.data?.permissionGrantId ?? "",
-          activationId: preparedEffect.data?.activationId ?? "",
-        },
+        preparedEffect: preparedEffect.data!,
         activation: activation.data ?? null,
         permission: permission.data ?? null,
         delegation: delegation.data ?? null,
         eligibility: eligibility.data!,
         evaluatedAtUtc: eligibility.data!.evaluatedAtUtc,
       }),
-    enabled: Boolean(preparedEffectId) && Boolean(eligibility.data),
+    enabled: Boolean(preparedEffectId) && Boolean(preparedEffect.data) && Boolean(eligibility.data),
+    staleTime: 0,
+  });
+  const invocationDescriptor = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.invocationDescriptor.detail(preparedEffectId)
+      : ["collective", "invocation-descriptor", "detail", "absent"] as const,
+    queryFn: () =>
+      createInvocationDescriptorRepository().describe({
+        preparedEffect: preparedEffect.data!,
+        activation: activation.data ?? null,
+        permission: permission.data ?? null,
+        delegation: delegation.data ?? null,
+        eligibility: eligibility.data!,
+        preview: invocationPreview.data!,
+      }),
+    enabled:
+      Boolean(preparedEffectId)
+      && Boolean(preparedEffect.data)
+      && Boolean(eligibility.data)
+      && Boolean(invocationPreview.data),
     staleTime: 0,
   });
 
@@ -222,6 +241,12 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
           {preparedEffectId && invocationPreview.data && (
             <div className="border-t border-[--tungsten]/30 pt-3">
               <InvocationPreviewPanel preview={invocationPreview.data} />
+            </div>
+          )}
+
+          {preparedEffectId && invocationDescriptor.data && (
+            <div className="border-t border-[--tungsten]/30 pt-3">
+              <InvocationDescriptorPanel descriptor={invocationDescriptor.data} />
             </div>
           )}
 
