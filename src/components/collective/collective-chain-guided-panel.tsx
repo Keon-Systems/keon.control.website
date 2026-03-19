@@ -1,11 +1,19 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CollectiveChainStage } from "@/lib/collective/chain.dto";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
 import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
-import { createExecutionEligibilityRepository } from "@/lib/collective/repositories";
-import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ui/panel";
+import {
+  createAgentPermissionRepository,
+  createAuthorityActivationRepository,
+  createDelegatedAuthorityRepository,
+  createExecutionEligibilityRepository,
+  createPreparedEffectRepository,
+} from "@/lib/collective/repositories";
+import { createInvocationPreviewRepository } from "@/lib/collective/invocation-preview.repositories";
+import { Panel, PanelContent } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -122,6 +130,14 @@ export function CollectiveChainGuidedPanel({
 }: CollectiveChainGuidedPanelProps) {
   const content = GUIDED_CONTENT[stepIndex];
   const showEligibility = content?.stage === "preparedEffect" && Boolean(preparedEffectId);
+  const preparedEffect = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.preparedEffects.detail(preparedEffectId)
+      : ["collective", "prepared-effects", "detail", "absent"] as const,
+    queryFn: () => createPreparedEffectRepository().detail(preparedEffectId!),
+    enabled: showEligibility,
+    staleTime: 0,
+  });
   const eligibility = useQuery({
     queryKey: preparedEffectId
       ? collectiveObservabilityQueryKeys.executionEligibility.detail(preparedEffectId)
@@ -130,6 +146,43 @@ export function CollectiveChainGuidedPanel({
     enabled: showEligibility,
     staleTime: 0,
   });
+  const activation = useQuery({
+    queryKey: preparedEffect.data?.activationId
+      ? collectiveObservabilityQueryKeys.authorityActivations.detail(preparedEffect.data.activationId)
+      : ["collective", "authority-activations", "detail", "absent"] as const,
+    queryFn: () => createAuthorityActivationRepository().detail(preparedEffect.data!.activationId),
+    enabled: showEligibility && Boolean(preparedEffect.data?.activationId),
+    staleTime: 0,
+  });
+  const permission = useQuery({
+    queryKey: preparedEffect.data?.permissionGrantId
+      ? collectiveObservabilityQueryKeys.agentPermissions.detail(preparedEffect.data.permissionGrantId)
+      : ["collective", "agent-permissions", "detail", "absent"] as const,
+    queryFn: () => createAgentPermissionRepository().detail(preparedEffect.data!.permissionGrantId),
+    enabled: showEligibility && Boolean(preparedEffect.data?.permissionGrantId),
+    staleTime: 0,
+  });
+  const delegation = useQuery({
+    queryKey: preparedEffect.data?.delegationGrantId
+      ? collectiveObservabilityQueryKeys.delegatedAuthority.detail(preparedEffect.data.delegationGrantId)
+      : ["collective", "delegated-authority", "detail", "absent"] as const,
+    queryFn: () => createDelegatedAuthorityRepository().detail(preparedEffect.data!.delegationGrantId),
+    enabled: showEligibility && Boolean(preparedEffect.data?.delegationGrantId),
+    staleTime: 0,
+  });
+  const invocationPreview = useMemo(() => {
+    if (!preparedEffect.data || !eligibility.data) {
+      return null;
+    }
+
+    return createInvocationPreviewRepository().preview({
+      preparedEffect: preparedEffect.data,
+      activation: activation.data ?? null,
+      permission: permission.data ?? null,
+      delegation: delegation.data ?? null,
+      eligibility: eligibility.data,
+    });
+  }, [activation.data, delegation.data, eligibility.data, permission.data, preparedEffect.data]);
 
   if (!content) return null;
 
@@ -218,6 +271,17 @@ export function CollectiveChainGuidedPanel({
             </p>
             <p className="mt-1 text-xs font-mono text-[--flash]">
               {eligibility.data.statusPresentation.label}
+            </p>
+          </div>
+        )}
+
+        {showEligibility && invocationPreview && (
+          <div className="rounded-sm border border-[--tungsten]/30 p-2">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[--steel]">
+              Invocation Preview
+            </p>
+            <p className="mt-1 text-xs font-mono text-[--flash]">
+              {invocationPreview.statusPresentation.label}
             </p>
           </div>
         )}

@@ -1,7 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { CollectiveChainDetail, CollectiveChainEdge, CollectiveChainNode } from "@/lib/collective/chain.dto";
 import { COLLECTIVE_CHAIN_STAGES } from "@/lib/collective/chain.normalization";
+import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
+import { createInvocationPreviewRepository } from "@/lib/collective/invocation-preview.repositories";
+import {
+  createAgentPermissionRepository,
+  createAuthorityActivationRepository,
+  createDelegatedAuthorityRepository,
+  createExecutionEligibilityRepository,
+  createPreparedEffectRepository,
+} from "@/lib/collective/repositories";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CollectiveChainDetailRail } from "./collective-chain-detail-rail";
@@ -51,6 +62,61 @@ function readGuidedTourDismissed(): boolean {
 export function CollectiveChainView({ detail, isLoading, fixtureName }: CollectiveChainViewProps) {
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(detail?.focusedNodeId ?? null);
   const [showOnboarding, setShowOnboarding] = useState(() => !readOnboardingDismissed());
+  const resolvedView = detail?.view ?? null;
+  const preparedEffectNode = resolvedView?.nodes.find((node) => node.stage === "preparedEffect" && node.isPresent) ?? null;
+  const preparedEffect = useQuery({
+    queryKey: preparedEffectNode?.recordId
+      ? collectiveObservabilityQueryKeys.preparedEffects.detail(preparedEffectNode.recordId)
+      : ["collective", "prepared-effects", "detail", "absent"] as const,
+    queryFn: () => createPreparedEffectRepository().detail(preparedEffectNode!.recordId!),
+    enabled: Boolean(preparedEffectNode?.recordId),
+    staleTime: 0,
+  });
+  const eligibility = useQuery({
+    queryKey: preparedEffectNode?.recordId
+      ? collectiveObservabilityQueryKeys.executionEligibility.detail(preparedEffectNode.recordId)
+      : ["collective", "execution-eligibility", "detail", "absent"] as const,
+    queryFn: () => createExecutionEligibilityRepository().evaluate(preparedEffectNode!.recordId!),
+    enabled: Boolean(preparedEffectNode?.recordId),
+    staleTime: 0,
+  });
+  const activation = useQuery({
+    queryKey: preparedEffect.data?.activationId
+      ? collectiveObservabilityQueryKeys.authorityActivations.detail(preparedEffect.data.activationId)
+      : ["collective", "authority-activations", "detail", "absent"] as const,
+    queryFn: () => createAuthorityActivationRepository().detail(preparedEffect.data!.activationId),
+    enabled: Boolean(preparedEffect.data?.activationId),
+    staleTime: 0,
+  });
+  const permission = useQuery({
+    queryKey: preparedEffect.data?.permissionGrantId
+      ? collectiveObservabilityQueryKeys.agentPermissions.detail(preparedEffect.data.permissionGrantId)
+      : ["collective", "agent-permissions", "detail", "absent"] as const,
+    queryFn: () => createAgentPermissionRepository().detail(preparedEffect.data!.permissionGrantId),
+    enabled: Boolean(preparedEffect.data?.permissionGrantId),
+    staleTime: 0,
+  });
+  const delegation = useQuery({
+    queryKey: preparedEffect.data?.delegationGrantId
+      ? collectiveObservabilityQueryKeys.delegatedAuthority.detail(preparedEffect.data.delegationGrantId)
+      : ["collective", "delegated-authority", "detail", "absent"] as const,
+    queryFn: () => createDelegatedAuthorityRepository().detail(preparedEffect.data!.delegationGrantId),
+    enabled: Boolean(preparedEffect.data?.delegationGrantId),
+    staleTime: 0,
+  });
+  const invocationPreview = useMemo(() => {
+    if (!preparedEffect.data || !eligibility.data) {
+      return null;
+    }
+
+    return createInvocationPreviewRepository().preview({
+      preparedEffect: preparedEffect.data,
+      activation: activation.data ?? null,
+      permission: permission.data ?? null,
+      delegation: delegation.data ?? null,
+      eligibility: eligibility.data,
+    });
+  }, [activation.data, delegation.data, eligibility.data, permission.data, preparedEffect.data]);
 
   // Guided tour state
   const [isGuidedMode, setIsGuidedMode] = useState(false);
@@ -142,11 +208,10 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
     return <CollectiveChainEmptyState />;
   }
 
-  const { view } = detail;
+  const view = detail.view;
   const focusedNode = focusedNodeId
     ? view.nodes.find((n) => n.id === focusedNodeId) ?? null
     : null;
-  const preparedEffectNode = view.nodes.find((node) => node.stage === "preparedEffect" && node.isPresent) ?? null;
 
   const presentCount = view.completeness.presentStages.length;
 
@@ -264,6 +329,7 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
                         isFocused={isGuidedFocused || (!isGuidedMode && focusedNodeId === node.id)}
                         isDimmed={isDimmed}
                         isGuidedMissing={isGuidedMissing}
+                        invocationStatus={node.stage === "preparedEffect" ? invocationPreview?.status : undefined}
                         onSelect={handleSelectNode}
                       />
                       {showEdge && (

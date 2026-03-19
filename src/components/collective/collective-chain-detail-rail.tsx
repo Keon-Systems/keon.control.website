@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { DataValue } from "@/components/ui/data-value";
@@ -56,6 +57,14 @@ interface CollectiveChainDetailRailProps {
 
 export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailProps) {
   const preparedEffectId = node?.stage === "preparedEffect" && node.isPresent ? node.recordId : null;
+  const preparedEffect = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.preparedEffects.detail(preparedEffectId)
+      : ["collective", "prepared-effects", "detail", "absent"] as const,
+    queryFn: () => createPreparedEffectRepository().detail(preparedEffectId!),
+    enabled: Boolean(preparedEffectId),
+    staleTime: 0,
+  });
   const eligibility = useQuery({
     queryKey: preparedEffectId
       ? collectiveObservabilityQueryKeys.executionEligibility.detail(preparedEffectId)
@@ -64,6 +73,43 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
     enabled: Boolean(preparedEffectId),
     staleTime: 0,
   });
+  const activation = useQuery({
+    queryKey: preparedEffect.data?.activationId
+      ? collectiveObservabilityQueryKeys.authorityActivations.detail(preparedEffect.data.activationId)
+      : ["collective", "authority-activations", "detail", "absent"] as const,
+    queryFn: () => createAuthorityActivationRepository().detail(preparedEffect.data!.activationId),
+    enabled: Boolean(preparedEffect.data?.activationId),
+    staleTime: 0,
+  });
+  const permission = useQuery({
+    queryKey: preparedEffect.data?.permissionGrantId
+      ? collectiveObservabilityQueryKeys.agentPermissions.detail(preparedEffect.data.permissionGrantId)
+      : ["collective", "agent-permissions", "detail", "absent"] as const,
+    queryFn: () => createAgentPermissionRepository().detail(preparedEffect.data!.permissionGrantId),
+    enabled: Boolean(preparedEffect.data?.permissionGrantId),
+    staleTime: 0,
+  });
+  const delegation = useQuery({
+    queryKey: preparedEffect.data?.delegationGrantId
+      ? collectiveObservabilityQueryKeys.delegatedAuthority.detail(preparedEffect.data.delegationGrantId)
+      : ["collective", "delegated-authority", "detail", "absent"] as const,
+    queryFn: () => createDelegatedAuthorityRepository().detail(preparedEffect.data!.delegationGrantId),
+    enabled: Boolean(preparedEffect.data?.delegationGrantId),
+    staleTime: 0,
+  });
+  const invocationPreview = useMemo(() => {
+    if (!preparedEffect.data || !eligibility.data) {
+      return null;
+    }
+
+    return createInvocationPreviewRepository().preview({
+      preparedEffect: preparedEffect.data,
+      activation: activation.data ?? null,
+      permission: permission.data ?? null,
+      delegation: delegation.data ?? null,
+      eligibility: eligibility.data,
+    });
+  }, [activation.data, delegation.data, eligibility.data, permission.data, preparedEffect.data]);
 
   const invocationPreview = useQuery({
     queryKey: preparedEffectId
@@ -147,6 +193,17 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
             <DetailRow label="Raw State" value={node.rawState} mono />
             <DetailRow label="Constitutional Mode" value={node.constitutionalMode} mono />
           </div>
+
+          {preparedEffectId && (
+            <div className="border-t border-[--tungsten]/30 pt-3">
+              <p className="mb-2 text-[10px] font-mono uppercase tracking-wider text-[--steel]">
+                Constitutional Status
+              </p>
+              <p className="text-xs font-mono text-[--safety-orange] leading-relaxed">
+                Prepared effects remain inert regardless of eligibility or preview status.
+              </p>
+            </div>
+          )}
 
           {preparedEffectId && eligibility.data && (
             <div className="border-t border-[--tungsten]/30 pt-3">
