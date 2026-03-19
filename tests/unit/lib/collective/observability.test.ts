@@ -1,10 +1,15 @@
 import { presentPreparedEffectStatus } from "@/lib/collective/normalization";
 import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
 import {
+  createAgentPermissionRepository,
+  createAuthorityActivationRepository,
+  createDelegatedAuthorityRepository,
   createExecutionEligibilityRepository,
   createMockReformAdoptionProvider,
+  createPreparedEffectRepository,
   createReformAdoptionRepository,
 } from "@/lib/collective/repositories";
+import { createInvocationPreviewRepository } from "@/lib/collective/invocation-preview.repositories";
 import { collectiveObservabilityRoutes, extractRouteId } from "@/lib/collective/routes";
 
 describe("collective observability helpers", () => {
@@ -33,6 +38,15 @@ describe("collective observability helpers", () => {
     ).toEqual([
       "collective",
       "execution-eligibility",
+      "detail",
+      "prepared-effect-001",
+    ]);
+
+    expect(
+      collectiveObservabilityQueryKeys.invocationPreview.detail("prepared-effect-001"),
+    ).toEqual([
+      "collective",
+      "invocation-preview",
       "detail",
       "prepared-effect-001",
     ]);
@@ -157,6 +171,179 @@ describe("collective observability helpers", () => {
         {
           code: "upstream_revoked",
           message: "Upstream authority has been revoked.",
+        },
+      ],
+    });
+  });
+
+  it("derives invocation preview across required mock scenarios", async () => {
+    const previewRepository = createInvocationPreviewRepository();
+    const preparedEffects = createPreparedEffectRepository();
+    const activations = createAuthorityActivationRepository();
+    const permissions = createAgentPermissionRepository();
+    const delegations = createDelegatedAuthorityRepository();
+    const eligibility = createExecutionEligibilityRepository({
+      clock: () => new Date("2026-03-18T08:00:00Z"),
+    });
+
+    async function buildPreview(preparedEffectId: string) {
+      const preparedEffect = await preparedEffects.detail(preparedEffectId);
+      const eligibilityView = await eligibility.evaluate(preparedEffectId);
+      const [activation, permission, delegation] = await Promise.all([
+        activations.detail(preparedEffect.activationId).catch(() => null),
+        permissions.detail(preparedEffect.permissionGrantId).catch(() => null),
+        delegations.detail(preparedEffect.delegationGrantId).catch(() => null),
+      ]);
+
+      return previewRepository.preview({
+        preparedEffect,
+        activation,
+        permission,
+        delegation,
+        eligibility: eligibilityView,
+        evaluatedAtUtc: "2026-03-18T08:00:00Z",
+      });
+    }
+
+    const readyPreparedEffect = await preparedEffects.detail("prepared-effect-001");
+    const readyPermission = await permissions.detail(readyPreparedEffect.permissionGrantId);
+    const readyDelegation = await delegations.detail(readyPreparedEffect.delegationGrantId);
+    const readyActivation = await activations.detail(readyPreparedEffect.activationId);
+
+    await expect(buildPreview("prepared-effect-003")).resolves.toMatchObject({
+      preparedEffectId: "prepared-effect-003",
+      eligibilityStatus: "not_eligible",
+      status: "not_available",
+      summary: "This preview reflects authority conditions that are not currently available.",
+      statusPresentation: {
+        label: "Not Available",
+        tone: "neutral",
+      },
+      authorityContext: {
+        delegationId: "delegation-grant-001",
+        permissionId: "permission-grant-001",
+        activationId: "activation-missing",
+      },
+      requirements: [
+        {
+          code: "prepared_effect_must_be_ready",
+          message: "Prepared effect must be ready",
+          satisfied: true,
+        },
+        {
+          code: "activation_must_be_active",
+          message: "Activation must be active",
+          satisfied: false,
+        },
+        {
+          code: "permission_must_be_valid",
+          message: "Permission must be valid",
+          satisfied: true,
+        },
+        {
+          code: "delegation_must_be_valid",
+          message: "Delegation must be valid",
+          satisfied: true,
+        },
+        {
+          code: "scope_must_remain_within_bounds",
+          message: "Scope must remain within bounds",
+          satisfied: true,
+        },
+      ],
+    });
+
+    await expect(Promise.resolve(previewRepository.preview({
+      preparedEffect: readyPreparedEffect,
+      activation: readyActivation,
+      permission: {
+        ...readyPermission,
+        expiresAtUtc: "2026-03-18T07:00:00Z",
+      },
+      delegation: readyDelegation,
+      eligibility: {
+        preparedEffectId: readyPreparedEffect.preparedRequestId,
+        status: "eligible",
+        reasons: [],
+        evaluatedAtUtc: "2026-03-18T08:00:00Z",
+        statusPresentation: {
+          label: "Eligible",
+          tone: "success",
+        },
+      },
+      evaluatedAtUtc: "2026-03-18T08:00:00Z",
+  }))).resolves.toMatchObject({
+      preparedEffectId: "prepared-effect-001",
+      eligibilityStatus: "eligible",
+      status: "constrained",
+      summary: "This preview reflects authority conditions that remain constrained by requirements.",
+      statusPresentation: {
+        label: "Constrained",
+        tone: "warning",
+      },
+      requirements: [
+        {
+          code: "prepared_effect_must_be_ready",
+          message: "Prepared effect must be ready",
+          satisfied: true,
+        },
+        {
+          code: "activation_must_be_active",
+          message: "Activation must be active",
+          satisfied: true,
+        },
+        {
+          code: "permission_must_be_valid",
+          message: "Permission must be valid",
+          satisfied: false,
+        },
+        {
+          code: "delegation_must_be_valid",
+          message: "Delegation must be valid",
+          satisfied: true,
+        },
+        {
+          code: "scope_must_remain_within_bounds",
+          message: "Scope must remain within bounds",
+          satisfied: true,
+        },
+      ],
+    });
+
+    await expect(buildPreview("prepared-effect-001")).resolves.toMatchObject({
+      preparedEffectId: "prepared-effect-001",
+      eligibilityStatus: "eligible",
+      status: "ready",
+      summary: "All authority conditions reflected in this preview are satisfied.",
+      statusPresentation: {
+        label: "Ready",
+        tone: "success",
+      },
+      requirements: [
+        {
+          code: "prepared_effect_must_be_ready",
+          message: "Prepared effect must be ready",
+          satisfied: true,
+        },
+        {
+          code: "activation_must_be_active",
+          message: "Activation must be active",
+          satisfied: true,
+        },
+        {
+          code: "permission_must_be_valid",
+          message: "Permission must be valid",
+          satisfied: true,
+        },
+        {
+          code: "delegation_must_be_valid",
+          message: "Delegation must be valid",
+          satisfied: true,
+        },
+        {
+          code: "scope_must_remain_within_bounds",
+          message: "Scope must remain within bounds",
+          satisfied: true,
         },
       ],
     });

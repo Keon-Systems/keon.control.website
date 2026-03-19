@@ -11,6 +11,6 @@ export * from "./normalization";
 export * from "./queryKeys";
 export * from "./repositories";
 export * from "./routes";
-export * from "./eligibility.dto";
 export * from "./eligibility.mocks";
-export * from "./eligibility.repositories";
+export * from "./invocation-preview.dto";
+export * from "./invocation-preview.repositories";
