@@ -58,7 +58,7 @@ const REQUIREMENT_ORDER: readonly InvocationRequirementCode[] = [
 function deriveRequirements(
   eligibility: ExecutionEligibilityView,
 ): readonly InvocationRequirement[] {
-  const failedCodes = new Set(eligibility.reasons.map((r) => r.code));
+  const failedCodes = new Set<string>(eligibility.reasons.map((r) => r.code));
 
   return REQUIREMENT_ORDER.map((code) => {
     const failureCodes = REQUIREMENT_FAILURE_CODES[code];
