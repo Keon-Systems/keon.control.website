@@ -17,6 +17,7 @@ import type {
 import type {
   BadgePresentation,
   DispositionPresentation,
+  ExecutionEligibilityStatus,
   LifecyclePresentation,
   PresentationTone,
 } from "./dto";
@@ -182,5 +183,12 @@ export function presentPreparedEffectReasonCode(raw: PreparedEffectMediationReas
     PreparationSuperseded: { label: "Preparation Superseded", tone: "warning" },
     PreparationWithdrawn: { label: "Preparation Withdrawn", tone: "warning" },
     PreparationExpired: { label: "Preparation Expired", tone: "warning" },
+  });
+}
+
+export function presentExecutionEligibilityStatus(raw: ExecutionEligibilityStatus): LifecyclePresentation<ExecutionEligibilityStatus> {
+  return mapPresentation(raw, {
+    eligible: { label: "Eligible", tone: "success" },
+    not_eligible: { label: "Not Eligible", tone: "danger" },
   });
 }

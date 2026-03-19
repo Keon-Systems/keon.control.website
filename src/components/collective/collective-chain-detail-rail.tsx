@@ -1,9 +1,13 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { DataValue } from "@/components/ui/data-value";
 import { Panel, PanelContent, PanelHeader, PanelTitle } from "@/components/ui/panel";
-import type { CollectiveChainNode, CollectiveChainStage } from "@/lib/collective/chain.dto";
+import { ExecutionEligibilityPanel } from "@/components/collective/execution-eligibility-panel";
+import type { CollectiveChainNode } from "@/lib/collective/chain.dto";
+import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
+import { createExecutionEligibilityRepository } from "@/lib/collective/repositories";
 import { getCollectiveChainStageLabel } from "@/lib/collective/chain.normalization";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -49,6 +53,16 @@ interface CollectiveChainDetailRailProps {
 }
 
 export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailProps) {
+  const preparedEffectId = node?.stage === "preparedEffect" && node.isPresent ? node.recordId : null;
+  const eligibility = useQuery({
+    queryKey: preparedEffectId
+      ? collectiveObservabilityQueryKeys.executionEligibility.detail(preparedEffectId)
+      : ["collective", "execution-eligibility", "detail", "absent"] as const,
+    queryFn: () => createExecutionEligibilityRepository().evaluate(preparedEffectId!),
+    enabled: Boolean(preparedEffectId),
+    staleTime: 0,
+  });
+
   if (!node) {
     return (
       <Panel className="w-full">
@@ -118,6 +132,20 @@ export function CollectiveChainDetailRail({ node }: CollectiveChainDetailRailPro
             <DetailRow label="Raw State" value={node.rawState} mono />
             <DetailRow label="Constitutional Mode" value={node.constitutionalMode} mono />
           </div>
+
+          {preparedEffectId && eligibility.data && (
+            <div className="border-t border-[--tungsten]/30 pt-3">
+              <ExecutionEligibilityPanel eligibility={eligibility.data} />
+            </div>
+          )}
+
+          {preparedEffectId && eligibility.error && (
+            <div className="border-t border-[--tungsten]/30 pt-3">
+              <p className="text-xs font-mono text-[--safety-orange] leading-relaxed">
+                Execution eligibility is unavailable for this prepared effect.
+              </p>
+            </div>
+          )}
 
           {node.recordId && (
             <div className="border-t border-[--tungsten]/30 pt-3">

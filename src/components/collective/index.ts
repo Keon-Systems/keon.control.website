@@ -12,6 +12,7 @@ export { CollectiveStatusHeader } from "./collective-status-header";
 export { DeliberationDetailView } from "./deliberation-detail-view";
 export { DeliberationTimeline } from "./deliberation-timeline";
 export { DispositionBadge } from "./disposition-badge";
+export { ExecutionEligibilityPanel } from "./execution-eligibility-panel";
 export { HeatStateBadge } from "./heat-state-badge";
 export { LegitimacyAssessmentPanel } from "./legitimacy-assessment-panel";
 export { LegitimacyComparisonTable } from "./legitimacy-comparison-table";

@@ -1,6 +1,7 @@
 import { presentPreparedEffectStatus } from "@/lib/collective/normalization";
 import { collectiveObservabilityQueryKeys } from "@/lib/collective/queryKeys";
 import {
+  createExecutionEligibilityRepository,
   createMockReformAdoptionProvider,
   createReformAdoptionRepository,
 } from "@/lib/collective/repositories";
@@ -27,6 +28,15 @@ describe("collective observability helpers", () => {
       }),
     ).toBe("/api/collective/reforms/adoption?anchorEpochId=epoch-1&proposalId=proposal-1");
 
+    expect(
+      collectiveObservabilityQueryKeys.executionEligibility.detail("prepared-effect-001"),
+    ).toEqual([
+      "collective",
+      "execution-eligibility",
+      "detail",
+      "prepared-effect-001",
+    ]);
+
     expect(extractRouteId("grant-1", "grantId")).toBe("grant-1");
   });
 
@@ -48,5 +58,107 @@ describe("collective observability helpers", () => {
       "receipt:reform-adoption:001",
       "receipt:legitimacy:001",
     ]);
+  });
+
+  it("evaluates execution eligibility across required mock scenarios", async () => {
+    const repository = createExecutionEligibilityRepository({
+      clock: () => new Date("2026-03-18T08:00:00Z"),
+    });
+
+    await expect(repository.evaluate("prepared-effect-001")).resolves.toMatchObject({
+      preparedEffectId: "prepared-effect-001",
+      status: "eligible",
+      reasons: [],
+      statusPresentation: {
+        label: "Eligible",
+        tone: "success",
+      },
+    });
+
+    await expect(repository.evaluate("prepared-effect-003")).resolves.toMatchObject({
+      status: "not_eligible",
+      reasons: [{
+        code: "activation_missing",
+        message: "Activation record is missing.",
+      }],
+    });
+
+    await expect(repository.evaluate("prepared-effect-004")).resolves.toMatchObject({
+      status: "not_eligible",
+      statusPresentation: {
+        label: "Not Eligible",
+        tone: "warning",
+      },
+      reasons: [
+        {
+          code: "permission_invalid",
+          message: "Permission is not valid.",
+        },
+        {
+          code: "permission_expired",
+          message: "Permission is expired.",
+        },
+      ],
+    });
+
+    await expect(repository.evaluate("prepared-effect-005")).resolves.toMatchObject({
+      status: "not_eligible",
+      statusPresentation: {
+        label: "Not Eligible",
+        tone: "danger",
+      },
+      reasons: [{
+        code: "scope_mismatch",
+        message: "Effect scope exceeds delegated bounds.",
+      }],
+    });
+
+    await expect(repository.evaluate("prepared-effect-006")).resolves.toMatchObject({
+      status: "not_eligible",
+      statusPresentation: {
+        label: "Not Eligible",
+        tone: "danger",
+      },
+      reasons: [
+        {
+          code: "delegation_invalid",
+          message: "Delegation is not valid.",
+        },
+        {
+          code: "upstream_revoked",
+          message: "Upstream authority has been revoked.",
+        },
+      ],
+    });
+
+    await expect(repository.evaluate("prepared-effect-002")).resolves.toMatchObject({
+      status: "not_eligible",
+      statusPresentation: {
+        label: "Not Eligible",
+        tone: "danger",
+      },
+      reasons: [
+        {
+          code: "prepared_effect_not_ready",
+          message: "Prepared effect is not ready.",
+        },
+        {
+          code: "activation_not_active",
+          message: "Activation is not active.",
+        },
+        {
+          code: "permission_invalid",
+          message: "Permission is not valid.",
+        },
+        {
+          code: "delegation_invalid",
+          message: "Delegation is not valid.",
+        },
+        {
+          code: "upstream_revoked",
+          message: "Upstream authority has been revoked.",
+        },
+      ],
+    });
   });
 });

@@ -50,23 +50,13 @@ function readGuidedTourDismissed(): boolean {
 
 export function CollectiveChainView({ detail, isLoading, fixtureName }: CollectiveChainViewProps) {
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(detail?.focusedNodeId ?? null);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => !readOnboardingDismissed());
 
   // Guided tour state
   const [isGuidedMode, setIsGuidedMode] = useState(false);
   const [guidedStepIndex, setGuidedStepIndex] = useState(0);
-  const [dismissedGuidedMode, setDismissedGuidedMode] = useState(false);
+  const [dismissedGuidedMode, setDismissedGuidedMode] = useState(() => readGuidedTourDismissed());
   const stageCardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-
-  // Hydrate from localStorage after mount to avoid SSR mismatch
-  useEffect(() => {
-    if (readOnboardingDismissed()) {
-      setShowOnboarding(false);
-    }
-    if (readGuidedTourDismissed()) {
-      setDismissedGuidedMode(true);
-    }
-  }, []);
 
   // Keyboard support: arrow keys and Escape during guided mode
   useEffect(() => {
@@ -156,6 +146,7 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
   const focusedNode = focusedNodeId
     ? view.nodes.find((n) => n.id === focusedNodeId) ?? null
     : null;
+  const preparedEffectNode = view.nodes.find((node) => node.stage === "preparedEffect" && node.isPresent) ?? null;
 
   const presentCount = view.completeness.presentStages.length;
 
@@ -292,11 +283,30 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
             </PanelContent>
           </Panel>
 
-          {/* Secondary disclaimer — hidden during guided mode to tighten vertical flow */}
-          {!isGuidedMode && (
-            <p className="mt-2 text-[10px] font-mono text-[--tungsten]/60 text-center">
-              This surface observes authority flow — it does not grant it.
-            </p>
+          {/* Observational disclaimer */}
+          <p className="mt-2 text-[10px] font-mono text-[--tungsten] text-center">
+            Viewing a chain does not authorize action.
+          </p>
+        </div>
+
+        {/* Right rail: guided panel OR detail + onboarding */}
+        <div className="hidden lg:flex lg:w-80 lg:flex-col lg:gap-4 lg:shrink-0">
+          {isGuidedMode ? (
+            <CollectiveChainGuidedPanel
+              stepIndex={guidedStepIndex}
+              isStagePresentInChain={guidedStageIsPresent}
+              preparedEffectId={preparedEffectNode?.recordId ?? null}
+              onNext={handleGuidedNext}
+              onBack={handleGuidedBack}
+              onExit={handleExitGuidedTour}
+            />
+          ) : (
+            <>
+              <CollectiveChainDetailRail node={focusedNode} />
+              {showOnboarding && (
+                <CollectiveChainOnboarding onDismiss={handleDismissOnboarding} />
+              )}
+            </>
           )}
         </div>
 
@@ -317,6 +327,7 @@ export function CollectiveChainView({ detail, isLoading, fixtureName }: Collecti
           <CollectiveChainGuidedPanel
             stepIndex={guidedStepIndex}
             isStagePresentInChain={guidedStageIsPresent}
+            preparedEffectId={preparedEffectNode?.recordId ?? null}
             onNext={handleGuidedNext}
             onBack={handleGuidedBack}
             onExit={handleExitGuidedTour}
