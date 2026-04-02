@@ -24,3 +24,9 @@ yarn-error.log*
 .DS_Store
 *.pem
 *.log.next/
+
+# Test coverage reports
+coverage/
+
+# Claude worktrees and session state
+.claude/

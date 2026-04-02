@@ -1,131 +1,130 @@
 "use client";
 
+import * as React from "react";
+import Link from "next/link";
+import { Shell } from "@/components/layout";
+import { Card, CardContent, CardHeader, PageContainer, PageHeader } from "@/components/layout/page-container";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ManifestEntry } from "@/lib/contracts/pt013";
 import { formatHash, formatTimestamp } from "@/lib/format";
 import { mapThinReceipt, UIThinReceipt } from "@/lib/mappers";
-import { PageHeader } from "@/ui-kit/components/PageHeader";
-import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Key, Search } from "lucide-react";
-import Link from "next/link";
-import * as React from "react";
 
 export default function GlobalReceiptsPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [receipts, setReceipts] = React.useState<UIThinReceipt[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const { data: receipts, isLoading } = useQuery({
-    queryKey: ["global-receipts"],
-    queryFn: async () => {
+  React.useEffect(() => {
+    async function load() {
       const fixtures = ["happy", "gate_deny"];
       const allReceipts: UIThinReceipt[] = [];
-      
-      for (const f of fixtures) {
+
+      for (const fixture of fixtures) {
         try {
-          const res = await fetch(`/mock/pt013/${f}/evidence/manifest.json`);
-          const manifest = await res.json();
-          const receiptEntries = manifest.entries.filter((e: ManifestEntry) => e.rhid.startsWith("rhid:receipt:"));
-          
+          const manifestResponse = await fetch(`/mock/pt013/${fixture}/evidence/manifest.json`);
+          const manifest = await manifestResponse.json();
+          const receiptEntries = manifest.entries.filter((entry: ManifestEntry) => entry.rhid.startsWith("rhid:receipt:"));
+
           for (const entry of receiptEntries) {
             const safeRhid = entry.rhid.replace(/:/g, "_");
-            const rRes = await fetch(`/mock/pt013/${f}/evidence/receipts/${safeRhid}.json`);
-            const rData = await rRes.json();
-            allReceipts.push(mapThinReceipt(rData));
+            const receiptResponse = await fetch(`/mock/pt013/${fixture}/evidence/receipts/${safeRhid}.json`);
+            const receiptData = await receiptResponse.json();
+            allReceipts.push(mapThinReceipt(receiptData));
           }
-        } catch (e) {
-          console.error(`Failed to load receipts for fixture ${f}`, e);
+        } catch (error) {
+          console.error(`Failed to load receipts for fixture ${fixture}`, error);
         }
       }
-      return allReceipts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    },
-  });
 
-  const filteredReceipts = React.useMemo(() => {
-    if (!receipts) return [];
-    return receipts.filter(r => 
-        r.receiptId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.actionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.runId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [receipts, searchQuery]);
+      setReceipts(allReceipts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      setIsLoading(false);
+    }
+
+    load().catch(() => setIsLoading(false));
+  }, []);
+
+  const filteredReceipts = receipts.filter((receipt) =>
+    receipt.receiptId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    receipt.actionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    receipt.runId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col h-full bg-[#0B0C10]">
-      <PageHeader
-        title="Receipts Registry"
-        description="Global explorer for verifiable governance receipts and immutable rulings"
-      />
-      
-      <div className="px-6 py-4 border-b border-[#384656]">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#C5C6C7] opacity-50" />
-          <Input
-            placeholder="Search by Receipt ID, Action Type, or Run..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 bg-[#1F2833]/20 border-[#384656] text-sm"
-          />
-        </div>
-      </div>
+    <Shell>
+      <PageContainer maxWidth="full">
+        <PageHeader
+          title="Receipts"
+          description="Global explorer for verifiable governance receipts and immutable rulings."
+        />
 
-      <ScrollArea className="flex-1">
-        <div className="p-6">
-          {isLoading ? (
-            <div className="font-mono text-xs opacity-40">Scanning chain of custody...</div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredReceipts.map((receipt) => (
-                <div 
-                  key={receipt.hash}
-                  className="group relative bg-[#1F2833]/10 border border-[#384656] hover:border-[#66FCF1]/50 p-4 rounded transition-all"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded bg-[#66FCF1]/10">
-                        <Key className="h-4 w-4 text-[#66FCF1]" />
+        <Card>
+          <CardHeader title="Receipt registry" description="Use receipts to inspect what was bound to each governed action and why." />
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#C5C6C7] opacity-50" />
+              <Input
+                placeholder="Search by receipt ID, action type, or run..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-10 border-[#384656] bg-[#1F2833]/20 pl-10 text-sm"
+              />
+            </div>
+
+            {isLoading ? (
+              <div className="font-mono text-xs opacity-40">Scanning chain of custody...</div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredReceipts.map((receipt) => (
+                  <div key={receipt.hash} className="group relative rounded border border-[#384656] bg-[#1F2833]/10 p-4 transition-all hover:border-[#66FCF1]/50">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded bg-[#66FCF1]/10 p-2">
+                          <Key className="h-4 w-4 text-[#66FCF1]" />
+                        </div>
+                        <div>
+                          <h4 className="font-mono text-sm text-[#66FCF1]">{receipt.actionType}</h4>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[#C5C6C7] opacity-60">Action outcome</span>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/runtime/executions/${receipt.runId}`}
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#66FCF1] opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        View case <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase text-[#C5C6C7] opacity-40">Receipt ID</span>
+                        <span className="font-mono text-xs text-[#C5C6C7]">{formatHash(receipt.receiptId, 12)}</span>
                       </div>
                       <div>
-                        <h4 className="font-mono text-sm text-[#66FCF1]">{receipt.actionType}</h4>
-                        <span className="text-[10px] text-[#C5C6C7] opacity-60 uppercase font-bold tracking-widest">Action Outcome</span>
+                        <span className="mb-1 block text-[10px] font-bold uppercase text-[#C5C6C7] opacity-40">Run ID</span>
+                        <span className="font-mono text-xs text-[#C5C6C7]">{receipt.runId}</span>
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase text-[#C5C6C7] opacity-40">Timestamp</span>
+                        <span className="font-mono text-xs text-[#C5C6C7]">{formatTimestamp(new Date(receipt.timestamp))}</span>
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase text-[#C5C6C7] opacity-40">Chain hash</span>
+                        <span className="font-mono text-xs text-[#C5C6C7]">{formatHash(receipt.hash, 16)}</span>
                       </div>
                     </div>
-                    <Link 
-                      href={`/runtime/executions/${receipt.runId}`}
-                      className="flex items-center gap-1.5 text-[10px] font-bold text-[#66FCF1] opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider"
-                    >
-                      View Case <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
                   </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    <div>
-                      <span className="block text-[10px] text-[#C5C6C7] opacity-40 uppercase font-bold mb-1">Receipt ID</span>
-                      <span className="font-mono text-xs text-[#C5C6C7]">{formatHash(receipt.receiptId, 12)}</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-[#C5C6C7] opacity-40 uppercase font-bold mb-1">Run ID</span>
-                      <span className="font-mono text-xs text-[#C5C6C7]">{receipt.runId}</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-[#C5C6C7] opacity-40 uppercase font-bold mb-1">Timestamp</span>
-                      <span className="font-mono text-xs text-[#C5C6C7]">{formatTimestamp(new Date(receipt.timestamp))}</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-[#C5C6C7] opacity-40 uppercase font-bold mb-1">Chain Hash</span>
-                      <span className="font-mono text-xs text-[#C5C6C7]">{formatHash(receipt.hash, 16)}</span>
-                    </div>
+                ))}
+                {filteredReceipts.length === 0 && (
+                  <div className="rounded border border-dashed border-[#384656] py-12 text-center opacity-30">
+                    No matching receipts found in current registry scan.
                   </div>
-                </div>
-              ))}
-              {filteredReceipts.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-[#384656] rounded opacity-30">
-                   No matching receipts found in current registry scan.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </PageContainer>
+    </Shell>
   );
 }
