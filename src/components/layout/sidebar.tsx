@@ -2,18 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import {
-    BookOpen,
-    ChevronLeft,
-    CreditCard,
-    Gavel,
-    KeyRound,
-    LayoutDashboard,
-    MessageSquare,
-    Scale,
-    Settings,
-    Sparkles,
-    Users,
-    Waves
+  Activity,
+  BookOpen,
+  ChevronLeft,
+  Gavel,
+  Home,
+  KeyRound,
+  MessageSquare,
+  Scale,
+  Settings,
+  ShieldCheck,
+  Users,
+  Waves,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,20 +38,28 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
+    title: "Core",
     items: [
-      { label: "Overview", href: "/", icon: LayoutDashboard },
-      { label: "Get Started", href: "/get-started", icon: Sparkles },
+      { label: "Control", href: "/control", icon: Home },
+      { label: "Receipts", href: "/receipts", icon: KeyRound },
+      { label: "Policies", href: "/policies", icon: ShieldCheck },
+      { label: "Tenants", href: "/tenants", icon: Users },
+      { label: "Integrations", href: "/integrations", icon: Waves },
+      { label: "Collective", href: "/collective", icon: BookOpen },
+      { label: "System State", href: "/cockpit", icon: Activity },
+    ],
+  },
+  {
+    title: "Operator",
+    items: [
       { label: "Usage", href: "/usage", icon: Waves },
       { label: "API Keys", href: "/api-keys", icon: KeyRound },
-      { label: "Subscription", href: "/admin/subscription", icon: CreditCard },
-      { label: "Tenant", href: "/tenants", icon: Users },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },
   {
-    title: "Collective",
+    title: "Collective Detail",
     items: [
-      { label: "Overview", href: "/collective", icon: BookOpen },
       { label: "Deliberations", href: "/collective/deliberations", icon: MessageSquare },
       { label: "Reforms", href: "/collective/reforms", icon: Gavel },
       { label: "Legitimacy", href: "/collective/legitimacy", icon: Scale },
@@ -59,21 +67,15 @@ const navSections: NavSection[] = [
   },
 ];
 
-// Flat list for keyboard navigation
-const navItems: NavItem[] = navSections.flatMap((s) => s.items);
+const navItems: NavItem[] = navSections.flatMap((section) => section.items);
 
 export function Sidebar({ collapsed = false, onCollapse, className }: SidebarProps) {
   const pathname = usePathname();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
-  // Keyboard navigation (J/K keys)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not in an input field
-      if (
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") {
         return;
       }
 
@@ -95,7 +97,6 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [selectedIndex]);
 
-  // Update selected index based on pathname
   React.useEffect(() => {
     const index = navItems.findIndex((item) => item.href === pathname);
     if (index !== -1) {
@@ -103,7 +104,6 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
     }
   }, [pathname]);
 
-  // Save collapsed state to localStorage
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
@@ -118,12 +118,10 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
         className
       )}
     >
-      {/* Navigation Items */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {navSections.map((section, sectionIdx) => {
-          // Calculate the global index offset for this section
           let globalOffset = 0;
-          for (let i = 0; i < sectionIdx; i++) {
+          for (let i = 0; i < sectionIdx; i += 1) {
             globalOffset += navSections[i].items.length;
           }
 
@@ -134,9 +132,7 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
                   {section.title}
                 </div>
               )}
-              {sectionIdx > 0 && (
-                <div className="mb-2 border-t border-[#384656]" />
-              )}
+              {sectionIdx > 0 && <div className="mb-2 border-t border-[#384656]" />}
               {section.items.map((item, itemIdx) => {
                 const globalIndex = globalOffset + itemIdx;
                 const Icon = item.icon;
@@ -155,25 +151,9 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
                     )}
                     onMouseEnter={() => setSelectedIndex(globalIndex)}
                   >
-                    {/* Active indicator glow */}
-                    {isActive && (
-                      <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5"></div>
-                    )}
-
-                    {/* Icon */}
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 shrink-0 transition-colors",
-                        isActive && "text-[#66FCF1]"
-                      )}
-                    />
-
-                    {/* Label */}
-                    {!collapsed && (
-                      <span className="font-mono text-sm font-medium">{item.label}</span>
-                    )}
-
-                    {/* Tooltip for collapsed state */}
+                    {isActive && <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5" />}
+                    <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive && "text-[#66FCF1]")} />
+                    {!collapsed && <span className="font-mono text-sm font-medium">{item.label}</span>}
                     {collapsed && (
                       <div className="absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded border border-[#384656] bg-[#1F2833] px-3 py-2 font-mono text-sm text-[#C5C6C7] group-hover:block">
                         {section.title ? `${section.title}: ${item.label}` : item.label}
@@ -187,7 +167,6 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
         })}
       </nav>
 
-      {/* Collapse Toggle */}
       <div className="border-t border-[#384656] p-3">
         <button
           onClick={() => onCollapse?.(!collapsed)}
@@ -197,25 +176,16 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
           )}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <ChevronLeft
-            className={cn(
-              "h-5 w-5 transition-transform",
-              collapsed && "rotate-180"
-            )}
-          />
+          <ChevronLeft className={cn("h-5 w-5 transition-transform", collapsed && "rotate-180")} />
           {!collapsed && <span className="font-mono text-sm">Collapse</span>}
         </button>
       </div>
 
-      {/* Keyboard hint */}
       {!collapsed && (
         <div className="border-t border-[#384656] p-3">
           <div className="rounded bg-[#0B0C10] p-2 text-center">
-            <p className="font-mono text-xs text-[#C5C6C7] opacity-50">
-              Press{" "}
-              <kbd className="rounded bg-[#384656] px-1.5 py-0.5 text-[#66FCF1]">J</kbd> /{" "}
-              <kbd className="rounded bg-[#384656] px-1.5 py-0.5 text-[#66FCF1]">K</kbd>{" "}
-              to navigate
+            <p className="font-mono text-[11px] text-[#C5C6C7] opacity-40">
+              Guided setup lives outside the control plane and returns here only after activation is complete.
             </p>
           </div>
         </div>
