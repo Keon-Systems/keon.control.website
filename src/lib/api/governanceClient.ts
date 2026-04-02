@@ -9,6 +9,13 @@ import { EvidenceByRunResponseSchema } from "../contracts/evidence";
 import { ReceiptsSummaryByRunResponseSchema, ReceiptResponseSchema } from "../contracts/receipts";
 import { ListPoliciesResponseSchema, GetPolicyVersionResponseSchema } from "../contracts/policies";
 import { ComplianceSummarySchema } from "../contracts/compliance";
+import {
+  ListDeliberationsResponseSchema,
+  GetDeliberationDetailResponseSchema,
+  ListReformsResponseSchema,
+  GetReformDetailResponseSchema,
+  ListLegitimacyResponseSchema,
+} from "../contracts/collective";
 
 function kernelBaseUrl(): string {
   const v = process.env.NEXT_PUBLIC_KERNEL_BASE_URL;
@@ -83,5 +90,45 @@ export const governanceClient = {
       { baseUrl: kernelBaseUrl(), path: `/compliance/summary` },
       ComplianceSummarySchema
     ),
-};
 
+  // ── Collective retrieval methods (GET-only, no mutation methods) ──
+
+  listDeliberations: () =>
+    fetchJson(
+      { baseUrl: kernelBaseUrl(), path: `/collective/deliberations` },
+      ListDeliberationsResponseSchema
+    ),
+
+  getDeliberation: (sessionId: string) =>
+    fetchJson(
+      {
+        baseUrl: kernelBaseUrl(),
+        path: `/collective/deliberations/${encodeURIComponent(sessionId)}`,
+      },
+      GetDeliberationDetailResponseSchema
+    ),
+
+  listReforms: () =>
+    fetchJson(
+      { baseUrl: kernelBaseUrl(), path: `/collective/reforms` },
+      ListReformsResponseSchema
+    ),
+
+  getReform: (artifactId: string) =>
+    fetchJson(
+      {
+        baseUrl: kernelBaseUrl(),
+        path: `/collective/reforms/${encodeURIComponent(artifactId)}`,
+      },
+      GetReformDetailResponseSchema
+    ),
+
+  listLegitimacyAssessments: (artifactRef?: string) =>
+    fetchJson(
+      {
+        baseUrl: kernelBaseUrl(),
+        path: `/collective/legitimacy${artifactRef ? `?artifactRef=${encodeURIComponent(artifactRef)}` : ""}`,
+      },
+      ListLegitimacyResponseSchema
+    ),
+};

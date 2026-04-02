@@ -6,14 +6,19 @@ import { cn } from "@/lib/utils";
 import { Command } from "cmdk";
 import { Dialog, DialogContent } from "@radix-ui/react-dialog";
 import {
-  CreditCard,
-  KeyRound,
-  Sparkles,
-  Search,
+  DollarSign,
+  Gauge,
   LayoutDashboard,
+  Mail,
+  ScrollText,
+  Search,
+  Server,
   Settings,
+  ShieldAlert,
+  Siren,
+  Stethoscope,
+  Telescope,
   Users,
-  Waves,
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -34,67 +39,96 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const [search, setSearch] = React.useState("");
 
-  // Navigation commands
+  const nav = (href: string) => {
+    router.push(href);
+    onOpenChange(false);
+  };
+
+  // Navigation commands — matches sidebar 12 items exactly
   const navigationCommands: CommandItem[] = [
     {
-      id: "overview",
-      label: "Overview",
-      description: "Tenant overview, onboarding progress, and billing posture",
+      id: "fleet",
+      label: "Fleet",
+      description: "Operator command surface",
       icon: LayoutDashboard,
-      action: () => {
-        router.push("/");
-        onOpenChange(false);
-      },
+      action: () => nav("/"),
     },
     {
-      id: "get-started",
-      label: "Get Started",
-      description: "First-login onboarding and quickstart tasks",
-      icon: Sparkles,
-      action: () => {
-        router.push("/get-started");
-        onOpenChange(false);
-      },
+      id: "tenants",
+      label: "Tenants",
+      description: "Tenant workspace and health",
+      icon: Users,
+      action: () => nav("/tenants"),
     },
     {
-      id: "usage",
-      label: "Usage",
-      description: "Billing-period usage and projected overage",
-      icon: Waves,
-      action: () => {
-        router.push("/usage");
-        onOpenChange(false);
-      },
+      id: "incidents",
+      label: "Incidents",
+      description: "Active incident queue",
+      icon: Siren,
+      action: () => nav("/incidents"),
     },
     {
-      id: "api-keys",
-      label: "API Keys",
-      description: "Issue and review tenant credentials",
-      icon: KeyRound,
-      action: () => {
-        router.push("/api-keys");
-        onOpenChange(false);
-      },
+      id: "observability",
+      label: "Observability",
+      description: "SLO, jobs, traces, delivery",
+      icon: Telescope,
+      action: () => nav("/observability"),
     },
     {
-      id: "subscription",
-      label: "Subscription",
-      description: "Plan changes, billing status, and payment entry points",
-      icon: CreditCard,
-      action: () => {
-        router.push("/admin/subscription");
-        onOpenChange(false);
-      },
+      id: "security",
+      label: "Security",
+      description: "Threats, auth anomalies, abuse signals",
+      icon: ShieldAlert,
+      action: () => nav("/security"),
+    },
+    {
+      id: "finance",
+      label: "Finance",
+      description: "Revenue, collections, Azure spend",
+      icon: DollarSign,
+      action: () => nav("/finance"),
+    },
+    {
+      id: "infrastructure",
+      label: "Infrastructure",
+      description: "Azure resources and health",
+      icon: Server,
+      action: () => nav("/infrastructure"),
+    },
+    {
+      id: "communications",
+      label: "Communications",
+      description: "Compose and send operator messages",
+      icon: Mail,
+      action: () => nav("/communications"),
+    },
+    {
+      id: "rollouts",
+      label: "Rollouts",
+      description: "Feature flags, deployments, maintenance",
+      icon: Gauge,
+      action: () => nav("/rollouts"),
+    },
+    {
+      id: "support",
+      label: "Support",
+      description: "Ticket queue and churn risk",
+      icon: Stethoscope,
+      action: () => nav("/support"),
+    },
+    {
+      id: "audit",
+      label: "Audit",
+      description: "Privileged action log",
+      icon: ScrollText,
+      action: () => nav("/audit"),
     },
     {
       id: "settings",
       label: "Settings",
-      description: "System configuration",
+      description: "Operators, roles, API keys",
       icon: Settings,
-      action: () => {
-        router.push("/settings");
-        onOpenChange(false);
-      },
+      action: () => nav("/settings"),
     },
     {
       id: "tenant",
@@ -111,39 +145,39 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // Quick action commands
   const quickActions: CommandItem[] = [
     {
-      id: "subscription-actions",
-      label: "Open Subscription",
-      description: "Review upgrade, downgrade, and invoice actions",
-      icon: CreditCard,
-      action: () => {
-        router.push("/admin/subscription");
-        onOpenChange(false);
-      },
-      keywords: ["billing upgrade downgrade invoice payment portal"],
+      id: "declare-incident",
+      label: "Declare Incident",
+      description: "Open a new incident declaration",
+      icon: Siren,
+      action: () => nav("/incidents/new"),
+      keywords: ["new", "declare", "incident", "sev"],
     },
     {
-      id: "first-login",
-      label: "First Login Guide",
-      description: "Open the guided onboarding landing page",
-      icon: Sparkles,
-      action: () => {
-        router.push("/get-started");
-        onOpenChange(false);
-      },
-      keywords: ["onboarding quickstart api key receipt first request"],
-    },
-    {
-      id: "review-usage",
-      label: "Review Usage",
-      description: "Inspect billing-period consumption and current exposure",
+      id: "search-tenants",
+      label: "Search Tenants",
+      description: "Find a tenant by name or ID",
       icon: Search,
-      action: () => {
-        router.push("/usage");
-        onOpenChange(false);
-      },
-      keywords: ["usage overage quota billing period"],
+      action: () => nav("/tenants"),
+      keywords: ["find", "tenant", "search", "organization"],
     },
   ];
+
+  const filteredNav = search
+    ? navigationCommands.filter(
+        (c) =>
+          c.label.toLowerCase().includes(search.toLowerCase()) ||
+          c.description?.toLowerCase().includes(search.toLowerCase())
+      )
+    : navigationCommands;
+
+  const filteredActions = search
+    ? quickActions.filter(
+        (c) =>
+          c.label.toLowerCase().includes(search.toLowerCase()) ||
+          c.description?.toLowerCase().includes(search.toLowerCase()) ||
+          c.keywords?.some((k) => k.toLowerCase().includes(search.toLowerCase()))
+      )
+    : quickActions;
 
   // Reset search when dialog closes
   React.useEffect(() => {
@@ -195,74 +229,78 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               </Command.Empty>
 
               {/* Navigation Section */}
-              <Command.Group
-                heading="Navigation"
-                className="mb-2 px-2 font-mono text-xs uppercase tracking-wider text-[#66FCF1]"
-              >
-                {navigationCommands.map((command) => {
-                  const Icon = command.icon;
-                  return (
-                    <Command.Item
-                      key={command.id}
-                      value={command.label}
-                      onSelect={command.action}
-                      className={cn(
-                        "group relative flex cursor-pointer items-center gap-3 rounded px-3 py-2.5",
-                        "text-[#C5C6C7] outline-none transition-colors",
-                        "hover:bg-[#384656] hover:text-[#66FCF1]",
-                        "data-[selected=true]:bg-[#384656] data-[selected=true]:text-[#66FCF1]"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <div className="flex flex-1 flex-col">
-                        <span className="font-mono text-sm font-medium">
-                          {command.label}
-                        </span>
-                        {command.description && (
-                          <span className="font-mono text-xs opacity-50">
-                            {command.description}
-                          </span>
+              {filteredNav.length > 0 && (
+                <Command.Group
+                  heading="Navigation"
+                  className="mb-2 px-2 font-mono text-xs uppercase tracking-wider text-[#66FCF1]"
+                >
+                  {filteredNav.map((command) => {
+                    const Icon = command.icon;
+                    return (
+                      <Command.Item
+                        key={command.id}
+                        value={command.label}
+                        onSelect={command.action}
+                        className={cn(
+                          "group relative flex cursor-pointer items-center gap-3 rounded px-3 py-2.5",
+                          "text-[#C5C6C7] outline-none transition-colors",
+                          "hover:bg-[#384656] hover:text-[#66FCF1]",
+                          "data-[selected=true]:bg-[#384656] data-[selected=true]:text-[#66FCF1]"
                         )}
-                      </div>
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <div className="flex flex-1 flex-col">
+                          <span className="font-mono text-sm font-medium">
+                            {command.label}
+                          </span>
+                          {command.description && (
+                            <span className="font-mono text-xs opacity-50">
+                              {command.description}
+                            </span>
+                          )}
+                        </div>
+                      </Command.Item>
+                    );
+                  })}
+                </Command.Group>
+              )}
 
               {/* Quick Actions Section */}
-              <Command.Group
-                heading="Quick Actions"
-                className="mb-2 mt-4 px-2 font-mono text-xs uppercase tracking-wider text-[#66FCF1]"
-              >
-                {quickActions.map((command) => {
-                  const Icon = command.icon;
-                  return (
-                    <Command.Item
-                      key={command.id}
-                      value={`${command.label} ${command.keywords?.join(" ") || ""}`}
-                      onSelect={command.action}
-                      className={cn(
-                        "group relative flex cursor-pointer items-center gap-3 rounded px-3 py-2.5",
-                        "text-[#C5C6C7] outline-none transition-colors",
-                        "hover:bg-[#384656] hover:text-[#66FCF1]",
-                        "data-[selected=true]:bg-[#384656] data-[selected=true]:text-[#66FCF1]"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <div className="flex flex-1 flex-col">
-                        <span className="font-mono text-sm font-medium">
-                          {command.label}
-                        </span>
-                        {command.description && (
-                          <span className="font-mono text-xs opacity-50">
-                            {command.description}
-                          </span>
+              {filteredActions.length > 0 && (
+                <Command.Group
+                  heading="Quick Actions"
+                  className="mb-2 mt-4 px-2 font-mono text-xs uppercase tracking-wider text-[#66FCF1]"
+                >
+                  {filteredActions.map((command) => {
+                    const Icon = command.icon;
+                    return (
+                      <Command.Item
+                        key={command.id}
+                        value={`${command.label} ${command.keywords?.join(" ") || ""}`}
+                        onSelect={command.action}
+                        className={cn(
+                          "group relative flex cursor-pointer items-center gap-3 rounded px-3 py-2.5",
+                          "text-[#C5C6C7] outline-none transition-colors",
+                          "hover:bg-[#384656] hover:text-[#66FCF1]",
+                          "data-[selected=true]:bg-[#384656] data-[selected=true]:text-[#66FCF1]"
                         )}
-                      </div>
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <div className="flex flex-1 flex-col">
+                          <span className="font-mono text-sm font-medium">
+                            {command.label}
+                          </span>
+                          {command.description && (
+                            <span className="font-mono text-xs opacity-50">
+                              {command.description}
+                            </span>
+                          )}
+                        </div>
+                      </Command.Item>
+                    );
+                  })}
+                </Command.Group>
+              )}
             </Command.List>
 
             {/* Footer */}
