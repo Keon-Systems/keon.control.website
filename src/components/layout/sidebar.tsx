@@ -2,11 +2,19 @@
 
 import { cn } from "@/lib/utils";
 import {
-    CreditCard,
+    Activity,
+    BookOpen,
     ChevronLeft,
+    Cpu,
+    CreditCard,
+    FileCheck2,
+    GitBranch,
     KeyRound,
     LayoutDashboard,
+    Link2,
+    Scale,
     Settings,
+    Shield,
     Sparkles,
     Users,
     Waves
@@ -27,15 +35,40 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const navItems: NavItem[] = [
-  { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Get Started", href: "/get-started", icon: Sparkles },
-  { label: "Usage", href: "/usage", icon: Waves },
-  { label: "API Keys", href: "/api-keys", icon: KeyRound },
-  { label: "Subscription", href: "/admin/subscription", icon: CreditCard },
-  { label: "Tenant", href: "/tenants", icon: Users },
-  { label: "Settings", href: "/settings", icon: Settings },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "CONTROL PLANE",
+    items: [
+      { label: "Overview", href: "/", icon: LayoutDashboard },
+      { label: "Get Started", href: "/get-started", icon: Sparkles },
+      { label: "Usage", href: "/usage", icon: Waves },
+      { label: "API Keys", href: "/api-keys", icon: KeyRound },
+      { label: "Subscription", href: "/admin/subscription", icon: CreditCard },
+      { label: "Tenant", href: "/tenants", icon: Users },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
+  {
+    label: "GOVERNANCE",
+    items: [
+      { label: "Pulse", href: "/collective", icon: Activity },
+      { label: "Decisions", href: "/collective/decisions", icon: Scale },
+      { label: "Executions", href: "/collective/executions", icon: Cpu },
+      { label: "Evidence", href: "/collective/evidence", icon: FileCheck2 },
+      { label: "Policies", href: "/collective/policies", icon: BookOpen },
+      { label: "Receipts", href: "/collective/receipts", icon: Link2 },
+      { label: "Correlation", href: "/collective/correlation", icon: GitBranch },
+      { label: "Compliance", href: "/collective/compliance", icon: Shield },
+    ],
+  },
 ];
+
+const allItems = navGroups.flatMap((g) => g.items);
 
 export function Sidebar({ collapsed = false, onCollapse, className }: SidebarProps) {
   const pathname = usePathname();
@@ -44,7 +77,6 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
   // Keyboard navigation (J/K keys)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not in an input field
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -54,12 +86,12 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
 
       if (e.key === "j") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % navItems.length);
+        setSelectedIndex((prev) => (prev + 1) % allItems.length);
       } else if (e.key === "k") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + navItems.length) % navItems.length);
+        setSelectedIndex((prev) => (prev - 1 + allItems.length) % allItems.length);
       } else if (e.key === "Enter" && selectedIndex >= 0) {
-        const item = navItems[selectedIndex];
+        const item = allItems[selectedIndex];
         if (item) {
           window.location.href = item.href;
         }
@@ -72,7 +104,11 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
 
   // Update selected index based on pathname
   React.useEffect(() => {
-    const index = navItems.findIndex((item) => item.href === pathname);
+    const index = allItems.findIndex((item) =>
+      item.href === "/"
+        ? pathname === "/"
+        : pathname === item.href || pathname.startsWith(item.href + "/")
+    );
     if (index !== -1) {
       setSelectedIndex(index);
     }
@@ -85,6 +121,8 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
     }
   }, [collapsed]);
 
+  let flatIndex = 0;
+
   return (
     <aside
       className={cn(
@@ -94,51 +132,73 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
       )}
     >
       {/* Navigation Items */}
-      <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          const isSelected = index === selectedIndex;
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {navGroups.map((group, groupIdx) => (
+          <div key={group.label}>
+            {/* Group divider */}
+            {groupIdx > 0 && (
+              <div className="my-3 border-t border-[--tungsten]" />
+            )}
+            {!collapsed && (
+              <div className="mb-2 px-3 pt-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[--tungsten]">
+                  {group.label}
+                </span>
+              </div>
+            )}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "group relative flex items-center gap-3 rounded px-3 py-2.5 transition-all",
-                "text-[#C5C6C7] hover:bg-[#384656] hover:text-[#66FCF1]",
-                isActive && "border-l-2 border-[#66FCF1] bg-[#384656] text-[#66FCF1]",
-                isSelected && !isActive && "ring-1 ring-[#66FCF1] ring-opacity-50"
-              )}
-              onMouseEnter={() => setSelectedIndex(index)}
-            >
-              {/* Active indicator glow */}
-              {isActive && (
-                <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5"></div>
-              )}
+            {/* Group items */}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
+              const currentFlatIndex = flatIndex;
+              const isSelected = currentFlatIndex === selectedIndex;
+              flatIndex++;
 
-              {/* Icon */}
-              <Icon
-                className={cn(
-                  "h-5 w-5 shrink-0 transition-colors",
-                  isActive && "text-[#66FCF1]"
-                )}
-              />
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded px-3 py-2.5 transition-all",
+                    "text-[#C5C6C7] hover:bg-[#384656] hover:text-[#66FCF1]",
+                    isActive && "border-l-2 border-[#66FCF1] bg-[#384656] text-[#66FCF1]",
+                    isSelected && !isActive && "ring-1 ring-[#66FCF1] ring-opacity-50"
+                  )}
+                  onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
+                >
+                  {/* Active indicator glow */}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5"></div>
+                  )}
 
-              {/* Label */}
-              {!collapsed && (
-                <span className="font-mono text-sm font-medium">{item.label}</span>
-              )}
+                  {/* Icon */}
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 shrink-0 transition-colors",
+                      isActive && "text-[#66FCF1]"
+                    )}
+                  />
 
-              {/* Tooltip for collapsed state */}
-              {collapsed && (
-                <div className="absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded border border-[#384656] bg-[#1F2833] px-3 py-2 font-mono text-sm text-[#C5C6C7] group-hover:block">
-                  {item.label}
-                </div>
-              )}
-            </Link>
-          );
-        })}
+                  {/* Label */}
+                  {!collapsed && (
+                    <span className="font-mono text-sm font-medium">{item.label}</span>
+                  )}
+
+                  {/* Tooltip for collapsed state */}
+                  {collapsed && (
+                    <div className="absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded border border-[#384656] bg-[#1F2833] px-3 py-2 font-mono text-sm text-[#C5C6C7] group-hover:block">
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Collapse Toggle */}

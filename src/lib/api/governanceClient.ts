@@ -8,6 +8,7 @@ import {
 import { EvidenceByRunResponseSchema } from "../contracts/evidence";
 import { ReceiptsSummaryByRunResponseSchema, ReceiptResponseSchema } from "../contracts/receipts";
 import { ListPoliciesResponseSchema, GetPolicyVersionResponseSchema } from "../contracts/policies";
+import { ComplianceSummarySchema } from "../contracts/compliance";
 
 function kernelBaseUrl(): string {
   const v = process.env.NEXT_PUBLIC_KERNEL_BASE_URL;
@@ -75,6 +76,12 @@ export const governanceClient = {
         path: `/policies/${encodeURIComponent(policyId)}/versions/${encodeURIComponent(version)}`,
       },
       GetPolicyVersionResponseSchema
+    ),
+
+  listComplianceSummary: () =>
+    fetchJson(
+      { baseUrl: kernelBaseUrl(), path: `/compliance/summary` },
+      ComplianceSummarySchema
     ),
 };
 

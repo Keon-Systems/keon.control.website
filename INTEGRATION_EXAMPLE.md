@@ -44,7 +44,7 @@ function MyComponent() {
     <div>
       {/* Show indicator when using mock data */}
       {isUsingMock && (
-        <div className="bg-yellow-500 p-2 mb-4">
+        <div className="bg-yellow-500 p-2 mb-4">           
           ⚠️ Using mock data - API unavailable
         </div>
       )}
