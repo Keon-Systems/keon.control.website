@@ -11,6 +11,7 @@ export * from "./normalization";
 export * from "./queryKeys";
 export * from "./repositories";
 export * from "./routes";
+export * from "./ui-bridge";
 export * from "./eligibility.mocks";
 export * from "./invocation-preview.dto";
 export * from "./invocation-preview.mocks";

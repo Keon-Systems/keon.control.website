@@ -36,12 +36,18 @@ export function ReformDetailClient({ artifactId }: ReformDetailClientProps) {
     <div className="p-6 space-y-6">
       <ArtifactInspector artifact={viewModel} />
 
-      <div className="pt-4 border-t border-[#384656]">
+      <div className="flex gap-4 pt-4 border-t border-[#384656]">
         <Link
           href={`/collective/reforms/${artifactId}/legitimacy`}
           className="text-xs font-mono text-[#66FCF1] hover:underline"
         >
           View Legitimacy Assessment
+        </Link>
+        <Link
+          href={`/collective/reforms/${artifactId}/adoption`}
+          className="text-xs font-mono text-[#66FCF1] hover:underline"
+        >
+          View Adoption Decisions
         </Link>
       </div>
     </div>

@@ -3,7 +3,9 @@
 import { cn } from "@/lib/utils";
 import {
     Activity,
+    Archive,
     BookOpen,
+    CheckCircle,
     ChevronLeft,
     Cpu,
     CreditCard,
@@ -17,7 +19,8 @@ import {
     Shield,
     Sparkles,
     Users,
-    Waves
+    Waves,
+    Zap
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -64,6 +67,16 @@ const navGroups: NavGroup[] = [
       { label: "Receipts", href: "/collective/receipts", icon: Link2 },
       { label: "Correlation", href: "/collective/correlation", icon: GitBranch },
       { label: "Compliance", href: "/collective/compliance", icon: Shield },
+    ],
+  },
+  {
+    label: "AUTHORITY",
+    items: [
+      { label: "Delegations", href: "/collective/authority/delegations", icon: Shield },
+      { label: "Permissions", href: "/collective/authority/permissions", icon: KeyRound },
+      { label: "Activations", href: "/collective/authority/activations", icon: Zap },
+      { label: "Prepared Effects", href: "/collective/effects/prepared", icon: Archive },
+      { label: "Reforms", href: "/collective/reforms/adoption", icon: CheckCircle },
     ],
   },
 ];
