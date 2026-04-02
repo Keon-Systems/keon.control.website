@@ -8,6 +8,7 @@ import {
 import { EvidenceByRunResponseSchema } from "../contracts/evidence";
 import { ReceiptsSummaryByRunResponseSchema, ReceiptResponseSchema } from "../contracts/receipts";
 import { ListPoliciesResponseSchema, GetPolicyVersionResponseSchema } from "../contracts/policies";
+import { ComplianceSummarySchema } from "../contracts/compliance";
 import {
   ListDeliberationsResponseSchema,
   GetDeliberationDetailResponseSchema,
@@ -84,6 +85,12 @@ export const governanceClient = {
       GetPolicyVersionResponseSchema
     ),
 
+  listComplianceSummary: () =>
+    fetchJson(
+      { baseUrl: kernelBaseUrl(), path: `/compliance/summary` },
+      ComplianceSummarySchema
+    ),
+
   // ── Collective retrieval methods (GET-only, no mutation methods) ──
 
   listDeliberations: () =>
@@ -125,4 +132,3 @@ export const governanceClient = {
       ListLegitimacyResponseSchema
     ),
 };
-

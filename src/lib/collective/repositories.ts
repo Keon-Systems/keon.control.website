@@ -45,30 +45,7 @@ import type {
   DelegatedAuthorityGrantDetail,
   DelegatedAuthorityGrantListItem,
   DelegatedAuthorityLineageNode,
-  PreparedEffectLineageNode,
-  PreparedEffectRequestDetail,
-  PreparedEffectRequestListItem,
-  ReformAdoptionDecisionDetail,
-  ReformAdoptionDecisionListItem,
-  ReformAdoptionFilterState,
-} from "./dto";
-import {
-  buildMockAgentPermissionListResponse,
-  buildMockAuthorityActivationListResponse,
-  buildMockDelegatedAuthorityListResponse,
-  buildMockPreparedEffectListResponse,
-  buildMockReformAdoptionListResponse,
-  getMockAgentPermissionDetailResponse,
-  getMockAgentPermissionLineageResponse,
-  getMockAuthorityActivationDetailResponse,
-  getMockAuthorityActivationHistoryResponse,
-  getMockAuthorityActivationLineageResponse,
-  getMockDelegatedAuthorityDetailResponse,
-  getMockDelegatedAuthorityLineageResponse,
-  getMockPreparedEffectDetailResponse,
-  getMockPreparedEffectLineageResponse,
-  getMockReformAdoptionDetailResponse,
-} from "./mocks";
+import { presentExecutionEligibilityStatus } from "./normalization";
 import { collectiveObservabilityRoutes } from "./routes";
 
 const envelopeSchema = <TSchema extends z.ZodTypeAny>(schema: TSchema) =>
@@ -349,87 +326,142 @@ export interface PreparedEffectRepository {
   lineage(preparedRequestId: string): Promise<PreparedEffectLineageNode>;
 }
 
-export function createReformAdoptionRepository(provider: ReformAdoptionProvider = createMockReformAdoptionProvider()): ReformAdoptionRepository {
-  return {
-    async list(filters = {}) {
-      const payload = await provider.list(filters);
-      return payload.items.map(adaptReformAdoptionDecisionListItem);
-    },
-    async detail(decisionId) {
-      const payload = await provider.detail(decisionId);
-      return adaptReformAdoptionDecisionDetail(payload.decision, payload.mutationReceiptGroups);
-    },
-  };
-}
 
-export function createDelegatedAuthorityRepository(provider: DelegatedAuthorityProvider = createMockDelegatedAuthorityProvider()): DelegatedAuthorityRepository {
-  return {
-    async list(filters = {}) {
-      const payload = await provider.list(filters);
-      return payload.items.map(adaptDelegatedAuthorityGrantListItem);
-    },
-    async detail(grantId) {
-      const payload = await provider.detail(grantId);
-      return adaptDelegatedAuthorityGrantDetail(payload.grant);
-    },
-    async lineage(grantId) {
-      const payload = await provider.lineage(grantId);
-      return adaptDelegatedAuthorityLineage(payload.lineage);
-    },
-  };
-}
+export function createExecutionEligibilityRepository(
+  dependencies: Partial<ExecutionEligibilityDependencies> = {},
+): ExecutionEligibilityRepository {
+  const preparedEffects = dependencies.preparedEffects ?? createPreparedEffectRepository();
+  const activations = dependencies.activations ?? createAuthorityActivationRepository();
+  const permissions = dependencies.permissions ?? createAgentPermissionRepository();
+  const delegations = dependencies.delegations ?? createDelegatedAuthorityRepository();
+  const clock = dependencies.clock ?? (() => new Date());
 
-export function createAgentPermissionRepository(provider: AgentPermissionProvider = createMockAgentPermissionProvider()): AgentPermissionRepository {
   return {
-    async list(filters = {}) {
-      const payload = await provider.list(filters);
-      return payload.items.map(adaptAgentPermissionGrantListItem);
-    },
-    async detail(grantId) {
-      const payload = await provider.detail(grantId);
-      return adaptAgentPermissionGrantDetail(payload.grant);
-    },
-    async lineage(grantId) {
-      const payload = await provider.lineage(grantId);
-      return adaptAgentPermissionLineage(payload.lineage);
-    },
-  };
-}
+    async evaluate(preparedEffectId) {
+      const preparedEffect = await preparedEffects.detail(preparedEffectId);
+      const evaluatedAt = clock();
+      const evaluatedAtUtc = evaluatedAt.toISOString();
+      const nowUtc = evaluatedAt.getTime();
 
-export function createAuthorityActivationRepository(provider: AuthorityActivationProvider = createMockAuthorityActivationProvider()): AuthorityActivationRepository {
-  return {
-    async list(filters = {}) {
-      const payload = await provider.list(filters);
-      return payload.items.map(adaptAuthorityActivationListItem);
-    },
-    async detail(activationId) {
-      const payload = await provider.detail(activationId);
-      return adaptAuthorityActivationDetail(payload.activation);
-    },
-    async history(activationId) {
-      const payload = await provider.history(activationId);
-      return adaptAuthorityActivationHistory(payload.history);
-    },
-    async lineage(activationId) {
-      const payload = await provider.lineage(activationId);
-      return adaptAuthorityActivationLineage(payload.lineage);
-    },
-  };
-}
+      const [activation, permission, delegation] = await Promise.all([
+        activations.detail(preparedEffect.activationId).catch(() => null),
+        permissions.detail(preparedEffect.permissionGrantId).catch(() => null),
+        delegations.detail(preparedEffect.delegationGrantId).catch(() => null),
+      ]);
 
-export function createPreparedEffectRepository(provider: PreparedEffectProvider = createMockPreparedEffectProvider()): PreparedEffectRepository {
-  return {
-    async list(filters = {}) {
-      const payload = await provider.list(filters);
-      return payload.items.map(adaptPreparedEffectListItem);
-    },
-    async detail(preparedRequestId) {
-      const payload = await provider.detail(preparedRequestId);
-      return adaptPreparedEffectDetail(payload.preparedEffect);
-    },
-    async lineage(preparedRequestId) {
-      const payload = await provider.lineage(preparedRequestId);
-      return adaptPreparedEffectLineage(payload.lineage);
+      const reasons: ExecutionEligibilityReason[] = [];
+
+      if (!isPreparedEffectReady(preparedEffect, nowUtc)) {
+        reasons.push(reason("prepared_effect_not_ready", "Prepared effect is not ready."));
+      }
+
+      if (!activation) {
+        reasons.push(reason("activation_missing", "Activation record is missing."));
+      }
+
+      if (activation && !isActivationActive(activation, nowUtc)) {
+        reasons.push(reason("activation_not_active", "Activation is not active."));
+      }
+
+      if (!permission || !isPermissionLifecycleValid(permission, nowUtc)) {
+        reasons.push(reason("permission_invalid", "Permission is not valid."));
+      }
+
+      if (permission && Date.parse(permission.expiresAtUtc) <= nowUtc) {
+        reasons.push(reason("permission_expired", "Permission is expired."));
+      }
+
+      if (!delegation || !isDelegationLifecycleValid(delegation, nowUtc)) {
+        reasons.push(reason("delegation_invalid", "Delegation is not valid."));
+      }
+
+      if (permission?.revocation || delegation?.revocation || activation?.termination?.terminalStatus === "Revoked") {
+        reasons.push(reason("upstream_revoked", "Upstream authority has been revoked."));
+      }
+
+      const scopeMismatch = Boolean(
+        activation
+          && permission
+          && delegation
+          && (
+            !isScopeAligned(
+              {
+                tenantId: preparedEffect.tenantId,
+                domainScope: preparedEffect.domainScope,
+                authorityClass: preparedEffect.authorityClass,
+                effectClass: preparedEffect.effectClass,
+                actionCategories: [preparedEffect.actionCategory],
+                capabilityCategories: [preparedEffect.capabilityCategory],
+                targetClass: preparedEffect.targetClass,
+              },
+              {
+                tenantId: preparedEffect.activatedScope.tenantId,
+                domainScope: preparedEffect.activatedScope.domainScope,
+                policyScope: preparedEffect.activatedScope.policyScope,
+                authorityClass: preparedEffect.activatedScope.authorityClass,
+                effectClass: preparedEffect.activatedScope.effectClass,
+                actionCategories: preparedEffect.activatedScope.actionCategories,
+                capabilityCategories: preparedEffect.activatedScope.capabilityCategories,
+                targetClass: preparedEffect.inheritedTargetClass,
+              },
+            )
+            || !isScopeAligned(
+              {
+                tenantId: activation.permittedAuthorityScope?.tenantId ?? activation.tenantId,
+                domainScope: activation.permittedAuthorityScope?.domainScope ?? activation.domainScope,
+                policyScope: activation.permittedAuthorityScope?.policyScope ?? activation.policyScope,
+                authorityClass: activation.permittedAuthorityScope?.authorityClass ?? activation.authorityClass,
+                effectClass: activation.permittedAuthorityScope?.effectClass ?? activation.effectClass,
+                actionCategories: activation.permittedAuthorityScope?.actionCategories ?? activation.actionCategories,
+                capabilityCategories: activation.permittedAuthorityScope?.capabilityCategories ?? activation.capabilityCategories,
+              },
+              {
+                tenantId: permission.tenantId,
+                domainScope: permission.domainScope,
+                policyScope: permission.policyScope,
+                authorityClass: permission.authorityClass,
+                effectClass: permission.effectClass,
+                actionCategories: permission.actionCategories,
+                capabilityCategories: permission.capabilityCategories,
+              },
+            )
+            || !isScopeAligned(
+              {
+                tenantId: permission.delegatedAuthorityScope?.tenantId ?? permission.tenantId,
+                domainScope: permission.delegatedAuthorityScope?.domainScope ?? permission.domainScope,
+                policyScope: permission.delegatedAuthorityScope?.policyScope ?? permission.policyScope,
+                authorityClass: permission.delegatedAuthorityScope?.authorityClass ?? permission.authorityClass,
+                effectClass: permission.delegatedAuthorityScope?.effectClass ?? permission.effectClass,
+              },
+              {
+                tenantId: delegation.tenantId,
+                domainScope: delegation.domainScope,
+                policyScope: delegation.policyScope,
+                authorityClass: delegation.authorityClass,
+                effectClass: delegation.effectClass,
+              },
+            )
+          ),
+      );
+
+      if (scopeMismatch) {
+        reasons.push(reason("scope_mismatch", "Effect scope exceeds delegated bounds."));
+      }
+
+      const status = reasons.length === 0 ? "eligible" : "not_eligible";
+      const presentation = presentExecutionEligibilityStatus(status);
+      const tone = resolveExecutionEligibilityTone(status, reasons);
+
+      return {
+        preparedEffectId,
+        status,
+        reasons,
+        evaluatedAtUtc,
+        statusPresentation: {
+          label: presentation.label,
+          tone,
+        },
+      };
     },
   };
 }
