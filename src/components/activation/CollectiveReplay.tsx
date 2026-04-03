@@ -60,8 +60,8 @@ interface ReplayScenario {
 const SCENARIOS: ReplayScenario[] = [
   {
     id: "db-migration",
-    directive: "Authorize a production schema upgrade with rollback protection.",
-    directiveSource: "Release directive · platform deployment runbook",
+    directive: "Authorize production schema upgrade with rollback protection.",
+    directiveSource: "Platform deployment runbook",
     goalLabel: "SCHEMA MIGRATION",
     goalDescription: "Database upgrade · v4.2.1 → v4.3.0",
     paths: [
@@ -86,7 +86,7 @@ const SCENARIOS: ReplayScenario[] = [
   {
     id: "iam-expansion",
     directive: "Authorize elevated service-account access for a bounded production task.",
-    directiveSource: "Access directive · deployment approval chain",
+    directiveSource: "Deployment approval chain",
     goalLabel: "ACCESS EXPANSION",
     goalDescription: "Service account · elevated IAM request",
     paths: [
@@ -253,6 +253,7 @@ export function CollectiveReplay({ className }: { className?: string }) {
     governance: ["governance", "approved", "hold_result"].includes(phase),
     result: ["approved", "hold_result"].includes(phase),
   };
+  const inspectReady = show.result;
 
   return (
     <div
@@ -299,10 +300,12 @@ export function CollectiveReplay({ className }: { className?: string }) {
           type="button"
           onClick={() => setInspectionOpen((value) => !value)}
           className={cn(
-            "shrink-0 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors",
+            "shrink-0 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-all duration-300",
             inspectionOpen
               ? "border-[#66FCF1]/60 bg-[#66FCF1]/10 text-[#66FCF1]"
-              : "border-white/[0.12] bg-white/[0.03] text-white/56 hover:border-[#45A29E]/40 hover:text-white/72"
+              : inspectReady
+                ? "border-[#66FCF1]/45 bg-[#66FCF1]/8 text-[#CFFDFC] shadow-[0_0_22px_rgba(102,252,241,0.22)] hover:border-[#66FCF1]/65 hover:shadow-[0_0_28px_rgba(102,252,241,0.3)]"
+                : "border-white/[0.12] bg-white/[0.03] text-white/56 hover:border-[#45A29E]/40 hover:text-white/72"
           )}
           aria-expanded={inspectionOpen}
           aria-controls="collective-deep-inspection"
@@ -418,10 +421,21 @@ export function CollectiveReplay({ className }: { className?: string }) {
             </text>
             <text
               x={GOAL_CX}
-              y={GOAL_Y + 28}
+              y={GOAL_Y + 24}
+              textAnchor="middle"
+              fill="#7E8E9E"
+              fontSize="7.5"
+              fontFamily="DM Mono, monospace"
+              letterSpacing="0.08em"
+            >
+              Derived from directive
+            </text>
+            <text
+              x={GOAL_CX}
+              y={GOAL_Y + 33}
               textAnchor="middle"
               fill="#C5C6C7"
-              fontSize="10"
+              fontSize="9"
               fontFamily="DM Mono, monospace"
             >
               {scenario.goalDescription}
@@ -768,10 +782,10 @@ export function CollectiveReplay({ className }: { className?: string }) {
         <div className="border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(102,252,241,0.06),rgba(6,10,16,0))] px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/34">
+              <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#66FCF1]">
                 Governed trace
               </div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#66FCF1]">
+              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/34">
                 Deep inspection mode
               </div>
               <p className="max-w-3xl font-mono text-[11px] leading-6 text-white/60">
@@ -810,6 +824,9 @@ export function CollectiveReplay({ className }: { className?: string }) {
                 </div>
                 <div className="mt-2 font-mono text-[12px] text-[#EAEAEA]">
                   {selectedPath.label} · {selectedPath.sublabel}
+                </div>
+                <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[#66FCF1]">
+                  Selected path satisfies all governance constraints.
                 </div>
                 <p className="mt-2 font-mono text-[11px] leading-6 text-white/58">{scenario.selectedWhy}</p>
               </div>
@@ -867,7 +884,9 @@ export function CollectiveReplay({ className }: { className?: string }) {
               <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
                 <SectionTitle>Receipt Anchors</SectionTitle>
                 <div className="space-y-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
-                  <div>Receipt: <span className="text-[#66FCF1]">{scenario.receiptRef}</span></div>
+                  <div className="font-mono text-[12px] tracking-[0.18em] text-[#66FCF1]">
+                    RECEIPT: {scenario.receiptRef}
+                  </div>
                   <div>Policy hash: <span className="text-[#66FCF1]">{scenario.policyHash}</span></div>
                   <div>Correlation: <span className="text-[#66FCF1]">{scenario.correlationRef}</span></div>
                   <div>Lineage: <span className="text-[#66FCF1]">{scenario.lineageRef}</span></div>
@@ -884,7 +903,7 @@ export function CollectiveReplay({ className }: { className?: string }) {
                   <span className="text-[#45A29E]">→</span>
                   <span>Intent</span>
                   <span className="text-[#45A29E]">→</span>
-                  <span>{selectedPath.label}</span>
+                  <span>Decision</span>
                   <span className="text-[#45A29E]">→</span>
                   <span>Governance</span>
                   <span className="text-[#45A29E]">→</span>
