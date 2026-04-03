@@ -131,6 +131,119 @@ function mockAlertsData(): RecordLike[] {
   }));
 }
 
+// ============================================================
+// Control Plane — mock data for Agent 5 Merge 1 collections
+// ============================================================
+
+const mockIncidents: RecordLike[] = [
+  { id: "inc-001", title: "Spine correlation timeout", severity: "critical", status: "open", reportedAt: "2026-03-15T08:12:00Z" },
+  { id: "inc-002", title: "Seal validation backlog", severity: "warning", status: "resolved", reportedAt: "2026-03-14T14:30:00Z" },
+];
+
+const mockSloBurnRates: RecordLike[] = [
+  { id: "slo-001", name: "API Availability", target: 0.999, current: 0.9985, burnRate: 1.2, window: "30d" },
+  { id: "slo-002", name: "Seal Latency p99", target: 0.99, current: 0.993, burnRate: 0.7, window: "30d" },
+];
+
+const mockJobQueues: RecordLike[] = [
+  { id: "queue-001", name: "seal-validation", pending: 3, running: 1, failed: 0, updatedAt: "2026-03-17T10:00:00Z" },
+  { id: "queue-002", name: "artifact-indexing", pending: 12, running: 4, failed: 1, updatedAt: "2026-03-17T10:00:00Z" },
+];
+
+const mockDeliveryChannels: RecordLike[] = [
+  { id: "channel-001", name: "webhook-primary", type: "webhook", status: "active", lastDeliveredAt: "2026-03-17T09:55:00Z" },
+  { id: "channel-002", name: "email-ops", type: "email", status: "active", lastDeliveredAt: "2026-03-16T18:00:00Z" },
+];
+
+const mockThreatSignals: RecordLike[] = [
+  { id: "threat-001", type: "brute-force", severity: "warning", detectedAt: "2026-03-16T22:10:00Z", mitigated: true },
+  { id: "threat-002", type: "anomalous-token-usage", severity: "info", detectedAt: "2026-03-17T06:30:00Z", mitigated: false },
+];
+
+const mockAuthAnomalies: RecordLike[] = [
+  { id: "auth-001", principalId: "op-unknown", action: "login-attempt", anomalyScore: 0.87, detectedAt: "2026-03-16T23:45:00Z" },
+];
+
+const mockAbuseEvents: RecordLike[] = [
+  { id: "abuse-001", type: "rate-limit-exceeded", sourceIp: "198.51.100.42", count: 312, windowMinutes: 5, detectedAt: "2026-03-17T01:20:00Z" },
+];
+
+const mockComplianceChecks: RecordLike[] = [
+  { id: "comp-001", standard: "SOC2-CC6.1", status: "pass", checkedAt: "2026-03-15T00:00:00Z" },
+  { id: "comp-002", standard: "GDPR-Art32", status: "pass", checkedAt: "2026-03-15T00:00:00Z" },
+];
+
+const mockMrrSummary: RecordLike = {
+  totalMrr: 24500, activeTenants: 3, churnRate: 0.02, growthRate: 0.08, asOf: "2026-03-01T00:00:00Z",
+};
+
+const mockCollections: RecordLike[] = [
+  { id: "coll-001", tenantId: "tenant-keon", amountDue: 12000, status: "paid", dueDate: "2026-03-01" },
+  { id: "coll-002", tenantId: "tenant-omega", amountDue: 8500, status: "paid", dueDate: "2026-03-01" },
+];
+
+const mockAzureSpend: RecordLike = {
+  totalMonthly: 3420.50, forecastMonthly: 3680.00, topService: "Azure Kubernetes Service", asOf: "2026-03-17",
+};
+
+const mockBudgetAlerts: RecordLike[] = [
+  { id: "budget-001", budgetName: "Production", threshold: 0.8, currentSpend: 0.76, status: "ok" },
+  { id: "budget-002", budgetName: "Dev/Test", threshold: 0.9, currentSpend: 0.92, status: "exceeded" },
+];
+
+const mockAzureResources: RecordLike[] = [
+  { id: "res-001", name: "keon-aks-prod", type: "Microsoft.ContainerService/managedClusters", region: "eastus2", status: "Running" },
+  { id: "res-002", name: "keon-sql-prod", type: "Microsoft.Sql/servers", region: "eastus2", status: "Online" },
+];
+
+const mockResourceGroupHealth: RecordLike[] = [
+  { id: "rg-001", name: "rg-keon-prod", resourceCount: 14, healthyCount: 14, status: "healthy" },
+  { id: "rg-002", name: "rg-keon-dev", resourceCount: 8, healthyCount: 7, status: "degraded" },
+];
+
+const mockCommMessages: RecordLike[] = [
+  { id: "msg-001", channel: "webhook-primary", subject: "Incident resolved", sentAt: "2026-03-16T18:00:00Z", status: "delivered" },
+  { id: "msg-002", channel: "email-ops", subject: "Daily SLO digest", sentAt: "2026-03-17T06:00:00Z", status: "delivered" },
+];
+
+const mockCommTemplates: RecordLike[] = [
+  { id: "tpl-001", name: "incident-notification", type: "webhook", version: "1.2.0" },
+  { id: "tpl-002", name: "slo-digest", type: "email", version: "1.0.0" },
+];
+
+const mockRollouts: RecordLike[] = [
+  { id: "rollout-001", name: "v2.4.0-canary", status: "in-progress", targetPercentage: 25, startedAt: "2026-03-17T08:00:00Z" },
+  { id: "rollout-002", name: "v2.3.1-stable", status: "complete", targetPercentage: 100, startedAt: "2026-03-10T10:00:00Z" },
+];
+
+const mockFeatureFlags: RecordLike[] = [
+  { id: "flag-001", key: "collective-surface-enabled", enabled: true, updatedAt: "2026-03-15T12:00:00Z" },
+  { id: "flag-002", key: "legitimacy-radar-v2", enabled: false, updatedAt: "2026-03-12T09:00:00Z" },
+];
+
+const mockMaintenanceWindows: RecordLike[] = [
+  { id: "mw-001", name: "Weekly patch window", schedule: "Sun 02:00-04:00 UTC", nextOccurrence: "2026-03-22T02:00:00Z" },
+];
+
+const mockAuditEntries: RecordLike[] = [
+  { id: "audit-001", actor: "operator-clint", action: "policy.update", target: "policy-governance-seal", timestamp: "2026-03-16T15:30:00Z" },
+  { id: "audit-002", actor: "system", action: "seal.validate", target: "run-00042", timestamp: "2026-03-17T09:00:00Z" },
+];
+
+const mockOverrideReceipts: RecordLike[] = [
+  { id: "override-001", policyId: "policy-governance-seal", operatorId: "operator-clint", reason: "Emergency maintenance bypass", createdAt: "2026-03-14T03:00:00Z", expiresAt: "2026-03-14T05:00:00Z" },
+];
+
+const mockOperators: RecordLike[] = [
+  { id: "operator-clint", name: "Clint Morgan", role: "admin", status: "active", lastActiveAt: "2026-03-17T09:30:00Z" },
+  { id: "operator-system", name: "System Agent", role: "service", status: "active", lastActiveAt: "2026-03-17T10:00:00Z" },
+];
+
+const mockApiKeys: RecordLike[] = [
+  { id: "key-001", name: "CI/CD Pipeline", prefix: "keon_sk_***", createdAt: "2026-02-01T00:00:00Z", lastUsedAt: "2026-03-17T08:45:00Z" },
+  { id: "key-002", name: "Monitoring Integration", prefix: "keon_sk_***", createdAt: "2026-02-15T00:00:00Z", lastUsedAt: "2026-03-16T22:00:00Z" },
+];
+
 function mockData(kind: GovernanceCollectionKind): RecordLike[] {
   switch (kind) {
     case "tenants":

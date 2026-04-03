@@ -1,142 +1,152 @@
 "use client";
 
 import * as React from "react";
-import { PageContainer, PageHeader, Card, CardHeader, CardContent } from "@/components/layout/page-container";
+import { DoctrineExplainer, TenantScopeGuard } from "@/components/control-plane";
+import { Shell } from "@/components/layout";
+import { Card, CardContent, CardHeader, PageContainer, PageHeader } from "@/components/layout/page-container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Eye, Settings } from "lucide-react";
+import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 
-const mockPolicies = [
+const baselines = [
   {
-    id: "pol-001",
-    name: "Budget Approval Threshold",
-    type: "budget",
-    status: "active",
-    version: "1.2.0",
-    evaluations: 1247,
+    id: "balanced",
+    name: "Balanced governance",
+    summary: "Default enterprise posture with moderate deny thresholds and human escalation for sensitive actions.",
+    denyThreshold: "Deny when trust score falls below 0.72 or when receipt lineage is incomplete.",
+    escalation: "Escalate to tenant admin for high-risk writes and to collective review for irreversible cross-boundary actions.",
+    signerRequirements: "One tenant signer for reversible actions; two signers for irreversible or spend-bearing actions.",
+    boundaryPosture: "Production traffic allowed through the governed boundary only after sandbox validation completes.",
+    hashSeed: "balanced-72-admin2-prod",
   },
   {
-    id: "pol-002",
-    name: "High-Risk Action Review",
-    type: "authority",
-    status: "active",
-    version: "2.0.1",
-    evaluations: 892,
+    id: "strict",
+    name: "Strict governance",
+    summary: "High-assurance posture for regulated tenants with aggressive denial and stronger signer quorum.",
+    denyThreshold: "Deny when trust score falls below 0.86 or when any proof artifact is stale.",
+    escalation: "Immediate escalation to compliance and security review for privileged writes, exports, or policy overrides.",
+    signerRequirements: "Two tenant signers plus one oversight signer for irreversible effects or policy changes.",
+    boundaryPosture: "Production remains sealed until sandbox evidence and signer quorum are both satisfied.",
+    hashSeed: "strict-86-oversight3-sealed",
   },
   {
-    id: "pol-003",
-    name: "Data Export Compliance",
-    type: "compliance",
-    status: "active",
-    version: "1.0.0",
-    evaluations: 156,
+    id: "expedited",
+    name: "Expedited operations",
+    summary: "Faster path for activated operators, with tighter receipt monitoring rather than lower evidence requirements.",
+    denyThreshold: "Deny when trust score falls below 0.78 or when policy drift is detected against the active baseline.",
+    escalation: "Escalate only on high-risk writes, external effects, or repeated denials within the same scope.",
+    signerRequirements: "One signer for most actions, second signer required for policy edits and external execution effects.",
+    boundaryPosture: "Production allowed after baseline publication and first governed action receipt verification.",
+    hashSeed: "expedited-78-signer2-live",
   },
-  {
-    id: "pol-004",
-    name: "Agent Autonomy Limits",
-    type: "custom",
-    status: "draft",
-    version: "0.1.0",
-    evaluations: 0,
-  },
-];
+] as const;
 
-const typeConfig = {
-  budget: { variant: "healthy" as const, label: "Budget" },
-  authority: { variant: "warning" as const, label: "Authority" },
-  compliance: { variant: "warning" as const, label: "Compliance" },
-  custom: { variant: "default" as const, label: "Custom" },
-};
+function policyHash(input: string, scope: string) {
+  const source = `${input}:${scope}`;
+  let hash = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 31 + source.charCodeAt(index)) >>> 0;
+  }
+  return `pol_${hash.toString(16).padStart(8, "0")}`;
+}
 
 export default function PoliciesPage() {
+  const { isConfirmed, confirmedTenant, confirmedEnvironment } = useTenantBinding();
+  const [selectedBaselineId, setSelectedBaselineId] = React.useState<(typeof baselines)[number]["id"]>("balanced");
+  const selectedBaseline = baselines.find((baseline) => baseline.id === selectedBaselineId) ?? baselines[0];
+  const scope = `${confirmedTenant?.id ?? "unbound"}:${confirmedEnvironment ?? "none"}`;
+  const hash = policyHash(selectedBaseline.hashSeed, scope);
+
   return (
-    <PageContainer>
-      <PageHeader
-        title="Policies"
-        description="Governance policies that control decision-making and execution"
-        actions={
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Policy
-          </Button>
-        }
-      />
-
-      {/* Policy Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {mockPolicies.map((policy) => {
-          const config = typeConfig[policy.type as keyof typeof typeConfig];
-
-          return (
-            <Card key={policy.id} className="transition-colors hover:border-[#66FCF1]/30">
-              <CardHeader
-                title={policy.name}
-                description={policy.id}
-                actions={
-                  <Badge
-                    variant={policy.status === "active" ? "healthy" : "default"}
-                    className="uppercase"
-                  >
-                    {policy.status}
-                  </Badge>
-                }
-              />
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#C5C6C7] opacity-60">Type</span>
-                    <Badge variant={config.variant} className="uppercase">
-                      {config.label}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#C5C6C7] opacity-60">Version</span>
-                    <span className="font-mono text-[#C5C6C7]">{policy.version}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#C5C6C7] opacity-60">Evaluations</span>
-                    <span className="font-mono text-[#C5C6C7]">
-                      {policy.evaluations.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 border-t border-[#384656] pt-3">
-                    <Button variant="outline" size="sm" className="flex-1 gap-2">
-                      <Settings className="h-3.5 w-3.5" />
-                      Configure
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Info Card */}
-      <Card className="mt-6">
-        <CardHeader
-          title="About Policies"
-          description="Policy evaluation and governance flow"
+    <Shell>
+      <PageContainer>
+        <PageHeader
+          title="Policies"
+          description="Choose the baseline that will bind future receipts, make consequences visible, and publish the policy hash for the confirmed tenant scope."
+          actions={<Badge variant="warning">Baseline required</Badge>}
         />
-        <CardContent>
-          <div className="space-y-3 text-sm text-[#C5C6C7] opacity-80">
-            <p>
-              <strong className="text-[#66FCF1]">Policies</strong> define the rules that govern
-              decision-making. They are evaluated during the Decision phase and their results are
-              recorded in the Receipt.
-            </p>
-            <div className="mt-4 flex items-center gap-2 rounded border border-[#384656] bg-[#0B0C10] p-3">
-              <FileText className="h-4 w-4 text-[#66FCF1]" />
-              <span className="font-mono text-xs">
-                Policy Evaluation → Decision → <strong className="text-[#66FCF1]">Receipt</strong>
-              </span>
+
+        {!isConfirmed && <TenantScopeGuard description="Policy baselines must be selected against an explicitly confirmed tenant and environment." />}
+
+        {isConfirmed && confirmedTenant && (
+          <div className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+              <Card>
+                <CardHeader title="Baseline selection" description="The policy experience is now organized around baseline choice and visible consequences, not generic placeholder cards." />
+                <CardContent className="space-y-4">
+                  {baselines.map((baseline) => {
+                    const active = baseline.id === selectedBaselineId;
+                    return (
+                      <button
+                        key={baseline.id}
+                        type="button"
+                        onClick={() => setSelectedBaselineId(baseline.id)}
+                        className={`rounded border p-4 text-left transition-colors ${
+                          active
+                            ? "border-[#66FCF1] bg-[#66FCF1]/8"
+                            : "border-[#384656] bg-[#0B0C10] hover:border-[#66FCF1]/40"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="font-['Rajdhani'] text-lg font-semibold text-[#C5C6C7]">{baseline.name}</div>
+                            <p className="mt-2 font-mono text-sm leading-6 text-[#C5C6C7] opacity-80">{baseline.summary}</p>
+                          </div>
+                          {active && <Badge variant="healthy">Selected</Badge>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader title="Publication preview" description="This published hash is what future receipts will bind against for the current confirmed scope." />
+                <CardContent className="space-y-3 font-mono text-sm text-[#C5C6C7]">
+                  <div>Tenant: {confirmedTenant.name}</div>
+                  <div>Environment: {confirmedEnvironment}</div>
+                  <div>Baseline: {selectedBaseline.name}</div>
+                  <div>Policy hash: {hash}</div>
+                  <Button>Publish baseline</Button>
+                </CardContent>
+              </Card>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: "Deny threshold", body: selectedBaseline.denyThreshold },
+                { label: "Escalation rules", body: selectedBaseline.escalation },
+                { label: "Signer requirements", body: selectedBaseline.signerRequirements },
+                { label: "Boundary posture", body: selectedBaseline.boundaryPosture },
+              ].map((item) => (
+                <Card key={item.label}>
+                  <CardHeader title={item.label} />
+                  <CardContent className="font-mono text-sm leading-6 text-[#C5C6C7] opacity-80">{item.body}</CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <DoctrineExplainer
+              title="What the baseline changes"
+              description="Future receipts bind to the published policy hash, so baseline selection must expose the consequences up front."
+              points={[
+                {
+                  label: "Visible denial",
+                  detail: "The deny threshold states when Keon refuses execution rather than treating denials as incidental implementation details.",
+                },
+                {
+                  label: "Escalation path",
+                  detail: "Escalation rules clarify who is paged and when oversight enters the loop before operators assume authority the interface does not grant.",
+                },
+                {
+                  label: "Receipt binding",
+                  detail: `Publishing ${hash} makes the active baseline inspectable on future receipts for ${confirmedTenant.name}.`,
+                },
+              ]}
+            />
           </div>
-        </CardContent>
-      </Card>
-    </PageContainer>
+        )}
+      </PageContainer>
+    </Shell>
   );
 }
