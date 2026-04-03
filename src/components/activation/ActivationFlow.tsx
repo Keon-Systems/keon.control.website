@@ -40,6 +40,8 @@ const POLL_INTERVAL_MS = 1500;
 const MIN_DISPLAY_MS = 2800; // Minimum time on activation screen (fast path)
 const COMPLETE_DELAY_MS = 1400; // Pause on "Ready" before redirect
 const SESSION_KEY = "keon.activation.provisioningId";
+const ACTIVATION_DESKTOP_GRID =
+  "lg:grid-cols-[minmax(480px,1.08fr)_minmax(560px,0.92fr)] xl:grid-cols-[minmax(520px,1fr)_minmax(660px,1.02fr)]";
 
 // ─── API Helpers ──────────────────────────────────────────────────────────────
 
@@ -237,7 +239,7 @@ export function ActivationFlow() {
 
       {/* Header */}
       <header className="relative border-b border-white/[0.06] bg-black/20 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-8 py-4">
+        <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between px-6 py-4 lg:px-10">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -258,31 +260,31 @@ export function ActivationFlow() {
       </header>
 
       {/* Main content */}
-      <main className="relative mx-auto w-full max-w-7xl px-8 py-10">
+      <main className="relative mx-auto w-full max-w-[1680px] px-6 py-8 lg:px-10 lg:py-10">
         {errorKind ? (
           // ── Error state ──
-          <div className="grid min-h-[560px] gap-6 lg:grid-cols-[1fr_minmax(0,520px)]">
+          <div className={cn("grid min-h-[560px] gap-6 xl:gap-8", ACTIVATION_DESKTOP_GRID)}>
             <ActivationError
               kind={errorKind}
               onRetry={["provisioning_failed", "network_error", "unknown"].includes(errorKind) ? retry : undefined}
             />
-            <CollectiveReplay className="hidden lg:flex" />
+            <CollectiveReplay className="hidden lg:flex lg:min-h-[620px]" />
           </div>
         ) : (
           // ── Active provisioning ──
           <div
-            className="grid min-h-[560px] gap-6 lg:grid-cols-[1fr_minmax(0,520px)]"
+            className={cn("grid min-h-[560px] gap-6 xl:gap-8", ACTIVATION_DESKTOP_GRID)}
             data-testid="activation-layout"
           >
             <ProvisioningPanel state={state} className="min-h-[400px]" />
-            <CollectiveReplay />
+            <CollectiveReplay className="lg:min-h-[620px]" />
           </div>
         )}
       </main>
 
       {/* Secure footer */}
       <footer className="relative mt-auto border-t border-white/[0.04] px-8 py-4">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
+        <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between px-0 lg:px-2">
           <span className="font-mono text-[10px] text-white/20">
             End-to-end encrypted · TLS 1.3
           </span>

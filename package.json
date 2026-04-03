@@ -19,7 +19,6 @@
     "smoke:evidence": "node scripts/smoke-evidence-routes.js",
     "smoke:governance": "node scripts/smoke-governance-routes.cjs",
     "smoke:http": "node scripts/smoke-http.cjs",
-    "test:unit": "vitest run",
     "test:smoke:collective-live": "playwright test tests/smoke/collective-submit-live.spec.ts",
     "test:smoke:ui": "playwright test tests/smoke/governance-panel.spec.ts"
   },
