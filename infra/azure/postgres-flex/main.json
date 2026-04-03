@@ -1,0 +1,346 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "16010515361275597503"
+    }
+  },
+  "parameters": {
+    "networkMode": {
+      "type": "string",
+      "defaultValue": "private",
+      "allowedValues": [
+        "public",
+        "private"
+      ],
+      "metadata": {
+        "description": "Deployment mode for the PostgreSQL Flexible Server network boundary."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for the server and supporting resources."
+      }
+    },
+    "serverName": {
+      "type": "string",
+      "metadata": {
+        "description": "Flexible Server name. Must be globally unique within the postgres.database.azure.com namespace."
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "keon_control",
+      "metadata": {
+        "description": "Application database name."
+      }
+    },
+    "postgresVersion": {
+      "type": "string",
+      "defaultValue": "16",
+      "allowedValues": [
+        "15",
+        "16"
+      ],
+      "metadata": {
+        "description": "PostgreSQL major version."
+      }
+    },
+    "administratorLogin": {
+      "type": "string",
+      "defaultValue": "keon_admin",
+      "metadata": {
+        "description": "Flexible Server administrator login."
+      }
+    },
+    "administratorPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Flexible Server administrator password."
+      }
+    },
+    "skuTier": {
+      "type": "string",
+      "defaultValue": "Burstable",
+      "allowedValues": [
+        "Burstable",
+        "GeneralPurpose",
+        "MemoryOptimized"
+      ],
+      "metadata": {
+        "description": "Flexible Server SKU tier."
+      }
+    },
+    "skuName": {
+      "type": "string",
+      "defaultValue": "Standard_B2ms",
+      "metadata": {
+        "description": "Flexible Server SKU name, for example Standard_B2ms or Standard_D2ads_v5."
+      }
+    },
+    "storageSizeGB": {
+      "type": "int",
+      "defaultValue": 64,
+      "minValue": 32,
+      "maxValue": 32768,
+      "metadata": {
+        "description": "Allocated storage in GiB."
+      }
+    },
+    "backupRetentionDays": {
+      "type": "int",
+      "defaultValue": 7,
+      "minValue": 7,
+      "maxValue": 35,
+      "metadata": {
+        "description": "Backup retention in days."
+      }
+    },
+    "geoRedundantBackup": {
+      "type": "string",
+      "defaultValue": "Disabled",
+      "allowedValues": [
+        "Disabled",
+        "Enabled"
+      ],
+      "metadata": {
+        "description": "Geo-redundant backup setting."
+      }
+    },
+    "highAvailabilityMode": {
+      "type": "string",
+      "defaultValue": "Disabled",
+      "allowedValues": [
+        "Disabled",
+        "SameZone",
+        "ZoneRedundant"
+      ],
+      "metadata": {
+        "description": "High availability mode."
+      }
+    },
+    "availabilityZone": {
+      "type": "string",
+      "defaultValue": "1",
+      "metadata": {
+        "description": "Primary availability zone."
+      }
+    },
+    "standbyAvailabilityZone": {
+      "type": "string",
+      "defaultValue": "2",
+      "metadata": {
+        "description": "Standby availability zone when high availability is enabled."
+      }
+    },
+    "publicFirewallRules": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Public firewall rules to create when networkMode is public."
+      }
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "[format('{0}.postgres.database.azure.com', parameters('serverName'))]",
+      "metadata": {
+        "description": "Private DNS zone name. Must end in .postgres.database.azure.com when using private mode."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-vnet', parameters('serverName'))]",
+      "metadata": {
+        "description": "Virtual network name to create when using private mode."
+      }
+    },
+    "virtualNetworkAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.0.0/16",
+      "metadata": {
+        "description": "Address space for the virtual network when using private mode."
+      }
+    },
+    "delegatedSubnetName": {
+      "type": "string",
+      "defaultValue": "postgres",
+      "metadata": {
+        "description": "Delegated subnet name for Flexible Server when using private mode."
+      }
+    },
+    "delegatedSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.40.1.0/24",
+      "metadata": {
+        "description": "Delegated subnet CIDR for Flexible Server when using private mode."
+      }
+    }
+  },
+  "variables": {
+    "isPrivate": "[equals(parameters('networkMode'), 'private')]",
+    "databaseHost": "[format('{0}.postgres.database.azure.com', parameters('serverName'))]",
+    "databaseUrlTemplate": "[format('postgresql://{0}:__REPLACE_WITH_PASSWORD__@{1}:5432/{2}?sslmode=require', parameters('administratorLogin'), variables('databaseHost'), parameters('databaseName'))]"
+  },
+  "resources": [
+    {
+      "condition": "[variables('isPrivate')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-11-01",
+      "name": "[parameters('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('virtualNetworkAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('delegatedSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('delegatedSubnetPrefix')]",
+              "delegations": [
+                {
+                  "name": "postgres-flex-delegation",
+                  "properties": {
+                    "serviceName": "Microsoft.DBforPostgreSQL/flexibleServers"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[variables('isPrivate')]",
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('privateDnsZoneName')]",
+      "location": "global"
+    },
+    {
+      "condition": "[variables('isPrivate')]",
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), format('{0}-vnet-link', parameters('serverName')))]",
+      "location": "global",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[parameters('serverName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "tier": "[parameters('skuTier')]"
+      },
+      "properties": {
+        "version": "[parameters('postgresVersion')]",
+        "createMode": "Create",
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorPassword')]",
+        "availabilityZone": "[parameters('availabilityZone')]",
+        "storage": {
+          "storageSizeGB": "[parameters('storageSizeGB')]"
+        },
+        "backup": {
+          "backupRetentionDays": "[parameters('backupRetentionDays')]",
+          "geoRedundantBackup": "[parameters('geoRedundantBackup')]"
+        },
+        "highAvailability": "[if(equals(parameters('highAvailabilityMode'), 'Disabled'), createObject('mode', 'Disabled'), createObject('mode', parameters('highAvailabilityMode'), 'standbyAvailabilityZone', parameters('standbyAvailabilityZone')))]",
+        "authConfig": {
+          "activeDirectoryAuth": "Disabled",
+          "passwordAuth": "Enabled"
+        },
+        "network": "[if(variables('isPrivate'), createObject('publicNetworkAccess', 'Disabled', 'delegatedSubnetResourceId', resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('delegatedSubnetName')), 'privateDnsZoneArmResourceId', resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))), createObject('publicNetworkAccess', 'Enabled'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]",
+        "[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', parameters('privateDnsZoneName'), format('{0}-vnet-link', parameters('serverName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[format('{0}/{1}', parameters('serverName'), parameters('databaseName'))]",
+      "properties": {
+        "charset": "UTF8",
+        "collation": "en_US.utf8"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', parameters('serverName'))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "publicFirewallRule",
+        "count": "[length(parameters('publicFirewallRules'))]"
+      },
+      "condition": "[not(variables('isPrivate'))]",
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[format('{0}/{1}', parameters('serverName'), parameters('publicFirewallRules')[copyIndex()].name)]",
+      "properties": {
+        "startIpAddress": "[parameters('publicFirewallRules')[copyIndex()].startIpAddress]",
+        "endIpAddress": "[parameters('publicFirewallRules')[copyIndex()].endIpAddress]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', parameters('serverName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "serverId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', parameters('serverName'))]"
+    },
+    "serverNameOut": {
+      "type": "string",
+      "value": "[parameters('serverName')]"
+    },
+    "databaseHost": {
+      "type": "string",
+      "value": "[variables('databaseHost')]"
+    },
+    "databaseNameOut": {
+      "type": "string",
+      "value": "[parameters('databaseName')]"
+    },
+    "administratorLoginOut": {
+      "type": "string",
+      "value": "[parameters('administratorLogin')]"
+    },
+    "fqdn": {
+      "type": "string",
+      "value": "[variables('databaseHost')]"
+    },
+    "databaseUrlTemplate": {
+      "type": "string",
+      "value": "[variables('databaseUrlTemplate')]"
+    },
+    "delegatedSubnetId": {
+      "type": "string",
+      "value": "[if(variables('isPrivate'), resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('delegatedSubnetName')), '')]"
+    },
+    "privateDnsZoneId": {
+      "type": "string",
+      "value": "[if(variables('isPrivate'), resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName')), '')]"
+    }
+  }
+}

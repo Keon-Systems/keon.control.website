@@ -1,192 +1,117 @@
 "use client";
 
 import * as React from "react";
+import { DoctrineExplainer, TenantScopeGuard } from "@/components/control-plane";
 import { Shell } from "@/components/layout";
-import { PageContainer, PageHeader, Card, CardHeader, CardContent } from "@/components/layout/page-container";
+import { Card, CardContent, CardHeader, PageContainer, PageHeader } from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { getBillingSummary, listControlTenants } from "@/lib/api/control-plane";
-import { User, Bell, Palette, AlertTriangle } from "lucide-react";
+import { getBillingSummary } from "@/lib/api/control-plane";
+import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
+import { Bell, ShieldCheck, User } from "lucide-react";
 
 export default function SettingsPage() {
+  const { isConfirmed, confirmedTenant, confirmedEnvironment } = useTenantBinding();
   const [billingState, setBillingState] = React.useState<string>("loading");
 
   React.useEffect(() => {
     async function load() {
-      const tenants = await listControlTenants();
-      if (!tenants[0]) return;
-      const billing = await getBillingSummary(tenants[0].id);
+      if (!confirmedTenant) {
+        setBillingState("scope required");
+        return;
+      }
+
+      const billing = await getBillingSummary(confirmedTenant.id);
       setBillingState(billing.billingState);
     }
 
     load().catch(() => setBillingState("unavailable"));
-  }, []);
+  }, [confirmedTenant]);
 
   return (
     <Shell>
       <PageContainer>
         <PageHeader
           title="Settings"
-          description="Configure your application preferences and account settings"
+          description="Operator preferences are secondary to governance-critical setup. This page now focuses on verified scope, notification posture, and account hygiene."
         />
 
-        <div className="max-w-2xl space-y-6">
-        {/* Profile Settings */}
-        <Card>
-          <CardHeader
-            title={
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-[#66FCF1]" />
-                <span>Profile</span>
-              </div>
-            }
-            description="Manage your account information"
-          />
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="font-mono text-sm font-medium text-[#C5C6C7]">
-                  Display Name
-                </label>
-                <Input defaultValue="Admin User" />
-              </div>
-              <div className="space-y-2">
-                <label className="font-mono text-sm font-medium text-[#C5C6C7]">Email</label>
-                <Input defaultValue="admin@example.com" type="email" />
-              </div>
-              <div className="space-y-2">
-                <label className="font-mono text-sm font-medium text-[#C5C6C7]">Billing State</label>
-                <Input value={billingState} readOnly />
-              </div>
-              <Button>Save Changes</Button>
-            </div>
-          </CardContent>
-        </Card>
+        {!isConfirmed && <TenantScopeGuard description="Settings that depend on tenant context require an explicitly confirmed scope first." />}
 
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader
-            title={
-              <div className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-[#66FCF1]" />
-                <span>Notifications</span>
-              </div>
-            }
-            description="Configure how you receive alerts and updates"
-          />
-          <CardContent>
-            <div className="space-y-4">
-              <SettingToggle
-                label="Email Notifications"
-                description="Receive alerts via email"
-                defaultChecked
+        {isConfirmed && confirmedTenant && (
+          <div className="space-y-6 max-w-4xl">
+            <Card>
+              <CardHeader
+                title={
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-[#66FCF1]" />
+                    <span>Verified scope</span>
+                  </div>
+                }
+                description="Settings no longer imply tenant authority. They reflect the scope you have already confirmed."
               />
-              <div className="h-px bg-[#384656]" />
-              <SettingToggle
-                label="Budget Alerts"
-                description="Notify when budget thresholds are reached"
-                defaultChecked
-              />
-              <div className="h-px bg-[#384656]" />
-              <SettingToggle
-                label="Policy Violations"
-                description="Notify on blocked or flagged executions"
-                defaultChecked
-              />
-              <div className="h-px bg-[#384656]" />
-              <SettingToggle
-                label="Weekly Digest"
-                description="Weekly summary of governance activity"
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <CardContent className="space-y-3 font-mono text-sm text-[#C5C6C7]">
+                <div>Tenant: {confirmedTenant.name}</div>
+                <div>Environment: {confirmedEnvironment}</div>
+                <div>Billing state: {billingState}</div>
+                <div className="pt-2">
+                  <Button size="sm">Refresh scope metadata</Button>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader
-            title={
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-[#66FCF1]" />
-                <span>Appearance</span>
-              </div>
-            }
-            description="Customize the look and feel"
-          />
-          <CardContent>
-            <div className="space-y-4">
-              <SettingToggle label="Dark Mode" description="Use dark theme" />
-              <div className="h-px bg-[#384656]" />
-              <SettingToggle
-                label="Compact Mode"
-                description="Reduce spacing for denser information display"
-              />
-            </div>
-          </CardContent>
-        </Card>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader
+                  title={
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-[#66FCF1]" />
+                      <span>Governance notifications</span>
+                    </div>
+                  }
+                  description="Alert posture matters more than theme toggles during tenant activation."
+                />
+                <CardContent className="space-y-4 font-mono text-sm text-[#C5C6C7]">
+                  <div>Policy violations: enabled</div>
+                  <div>Escalation notices: enabled</div>
+                  <div>Weekly digest: optional</div>
+                </CardContent>
+              </Card>
 
-        {/* Danger Zone */}
-        <Card className="border-[#FF6B6B]/30">
-          <CardHeader
-            title={
-              <div className="flex items-center gap-2 text-[#FF6B6B]">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Danger Zone</span>
-              </div>
-            }
-            description="Irreversible actions"
-          />
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-mono text-sm font-medium text-[#C5C6C7]">
-                  Sign Out All Sessions
-                </p>
-                <p className="font-mono text-xs text-[#C5C6C7] opacity-60">
-                  Sign out from all devices
-                </p>
-              </div>
-              <Button variant="outline" size="sm">
-                Sign Out All
-              </Button>
+              <Card>
+                <CardHeader
+                  title={
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-[#66FCF1]" />
+                      <span>Account hygiene</span>
+                    </div>
+                  }
+                  description="Keep identity and session state clean without confusing this screen for the governance baseline itself."
+                />
+                <CardContent className="space-y-4 font-mono text-sm text-[#C5C6C7]">
+                  <div>Session posture: verified</div>
+                  <div>Scope drift protection: active</div>
+                  <Button variant="outline" size="sm">Sign out all sessions</Button>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-        </div>
+
+            <DoctrineExplainer
+              title="Why settings moved down"
+              description="Generic SaaS preferences are no longer positioned ahead of governance-critical setup."
+              points={[
+                {
+                  label: "Scope first",
+                  detail: "Settings should never be the screen that quietly chooses enterprise context on the user’s behalf.",
+                },
+                {
+                  label: "Governance before cosmetics",
+                  detail: "Notification posture and verified scope matter more than visual preferences during initial activation.",
+                },
+              ]}
+            />
+          </div>
+        )}
       </PageContainer>
     </Shell>
-  );
-}
-
-function SettingToggle({
-  label,
-  description,
-  defaultChecked = false,
-}: {
-  label: string;
-  description: string;
-  defaultChecked?: boolean;
-}) {
-  const [checked, setChecked] = React.useState(defaultChecked);
-
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="font-mono text-sm font-medium text-[#C5C6C7]">{label}</p>
-        <p className="font-mono text-xs text-[#C5C6C7] opacity-60">{description}</p>
-      </div>
-      <button
-        onClick={() => setChecked(!checked)}
-        className={`relative h-6 w-11 rounded-full transition-colors ${
-          checked ? "bg-[#66FCF1]" : "bg-[#384656]"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-[#0B0C10] transition-transform ${
-            checked ? "translate-x-5" : "translate-x-0.5"
-          }`}
-        />
-      </button>
-    </div>
   );
 }

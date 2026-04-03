@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileCheck2,
   GitBranch,
+  Gavel,
   KeyRound,
   LayoutDashboard,
   Link2,

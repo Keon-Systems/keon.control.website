@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus2"
+    },
+    "networkMode": {
+      "value": "private"
+    },
+    "serverName": {
+      "value": "keon-control-prod-pg"
+    },
+    "databaseName": {
+      "value": "keon_control"
+    },
+    "administratorLogin": {
+      "value": "keon_admin"
+    },
+    "administratorPassword": {
+      "value": "__SET_AT_DEPLOY_TIME__"
+    },
+    "skuTier": {
+      "value": "GeneralPurpose"
+    },
+    "skuName": {
+      "value": "Standard_D2ads_v5"
+    },
+    "storageSizeGB": {
+      "value": 128
+    },
+    "backupRetentionDays": {
+      "value": 14
+    },
+    "highAvailabilityMode": {
+      "value": "Disabled"
+    },
+    "privateDnsZoneName": {
+      "value": "keon-control-prod.postgres.database.azure.com"
+    },
+    "virtualNetworkName": {
+      "value": "keon-control-prod-vnet"
+    },
+    "virtualNetworkAddressPrefix": {
+      "value": "10.50.0.0/16"
+    },
+    "delegatedSubnetName": {
+      "value": "postgres"
+    },
+    "delegatedSubnetPrefix": {
+      "value": "10.50.1.0/24"
+    }
+  }
+}
