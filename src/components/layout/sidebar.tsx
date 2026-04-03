@@ -2,19 +2,27 @@
 
 import { cn } from "@/lib/utils";
 import {
-    BookOpen,
-    ChevronLeft,
-    CreditCard,
-    Gavel,
-    KeyRound,
-    LayoutDashboard,
-    PlaySquare,
-    MessageSquare,
-    Scale,
-    Settings,
-    Sparkles,
-    Users,
-    Waves
+  Activity,
+  Archive,
+  BookOpen,
+  CheckCircle,
+  ChevronLeft,
+  Cpu,
+  CreditCard,
+  FileCheck2,
+  GitBranch,
+  KeyRound,
+  LayoutDashboard,
+  Link2,
+  MessageSquare,
+  PlaySquare,
+  Scale,
+  Settings,
+  Shield,
+  Sparkles,
+  Users,
+  Waves,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,13 +40,14 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-interface NavSection {
-  title?: string;
+interface NavGroup {
+  label: string;
   items: NavItem[];
 }
 
-const navSections: NavSection[] = [
+const navGroups: NavGroup[] = [
   {
+    label: "CONTROL PLANE",
     items: [
       { label: "Overview", href: "/", icon: LayoutDashboard },
       { label: "Get Started", href: "/get-started", icon: Sparkles },
@@ -50,7 +59,7 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    title: "Collective",
+    label: "GOVERNANCE",
     items: [
       { label: "Overview", href: "/collective", icon: BookOpen },
       { label: "Submit Run", href: "/collective/submit", icon: PlaySquare },
@@ -58,12 +67,29 @@ const navSections: NavSection[] = [
       { label: "Deliberations", href: "/collective/deliberations", icon: MessageSquare },
       { label: "Reforms", href: "/collective/reforms", icon: Gavel },
       { label: "Legitimacy", href: "/collective/legitimacy", icon: Scale },
+      { label: "Pulse", href: "/collective", icon: Activity },
+      { label: "Decisions", href: "/collective/decisions", icon: Scale },
+      { label: "Executions", href: "/collective/executions", icon: Cpu },
+      { label: "Evidence", href: "/collective/evidence", icon: FileCheck2 },
+      { label: "Policies", href: "/collective/policies", icon: BookOpen },
+      { label: "Receipts", href: "/collective/receipts", icon: Link2 },
+      { label: "Correlation", href: "/collective/correlation", icon: GitBranch },
+      { label: "Compliance", href: "/collective/compliance", icon: Shield },
+    ],
+  },
+  {
+    label: "AUTHORITY",
+    items: [
+      { label: "Delegations", href: "/collective/authority/delegations", icon: Shield },
+      { label: "Permissions", href: "/collective/authority/permissions", icon: KeyRound },
+      { label: "Activations", href: "/collective/authority/activations", icon: Zap },
+      { label: "Prepared Effects", href: "/collective/effects/prepared", icon: Archive },
+      { label: "Reforms", href: "/collective/reforms/adoption", icon: CheckCircle },
     ],
   },
 ];
 
-// Flat list for keyboard navigation
-const navItems: NavItem[] = navSections.flatMap((s) => s.items);
+const allItems = navGroups.flatMap((g) => g.items);
 
 export function Sidebar({ collapsed = false, onCollapse, className }: SidebarProps) {
   const pathname = usePathname();
@@ -72,7 +98,6 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
   // Keyboard navigation (J/K keys)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not in an input field
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -82,12 +107,12 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
 
       if (e.key === "j") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % navItems.length);
+        setSelectedIndex((prev) => (prev + 1) % allItems.length);
       } else if (e.key === "k") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + navItems.length) % navItems.length);
+        setSelectedIndex((prev) => (prev - 1 + allItems.length) % allItems.length);
       } else if (e.key === "Enter" && selectedIndex >= 0) {
-        const item = navItems[selectedIndex];
+        const item = allItems[selectedIndex];
         if (item) {
           window.location.href = item.href;
         }
@@ -100,7 +125,11 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
 
   // Update selected index based on pathname
   React.useEffect(() => {
-    const index = navItems.findIndex((item) => item.href === pathname);
+    const index = allItems.findIndex((item) =>
+      item.href === "/"
+        ? pathname === "/"
+        : pathname === item.href || pathname.startsWith(item.href + "/")
+    );
     if (index !== -1) {
       setSelectedIndex(index);
     }
@@ -113,6 +142,8 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
     }
   }, [collapsed]);
 
+  let flatIndex = 0;
+
   return (
     <aside
       className={cn(
@@ -123,71 +154,72 @@ export function Sidebar({ collapsed = false, onCollapse, className }: SidebarPro
     >
       {/* Navigation Items */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {navSections.map((section, sectionIdx) => {
-          // Calculate the global index offset for this section
-          let globalOffset = 0;
-          for (let i = 0; i < sectionIdx; i++) {
-            globalOffset += navSections[i].items.length;
-          }
+        {navGroups.map((group, groupIdx) => (
+          <div key={group.label}>
+            {/* Group divider */}
+            {groupIdx > 0 && (
+              <div className="my-3 border-t border-[--tungsten]" />
+            )}
+            {!collapsed && (
+              <div className="mb-2 px-3 pt-1">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[--tungsten]">
+                  {group.label}
+                </span>
+              </div>
+            )}
 
-          return (
-            <div key={section.title ?? sectionIdx} className={cn(sectionIdx > 0 && "mt-4")}>
-              {section.title && !collapsed && (
-                <div className="mb-2 px-3 font-mono text-[10px] uppercase tracking-widest text-[#66FCF1] opacity-60">
-                  {section.title}
-                </div>
-              )}
-              {sectionIdx > 0 && (
-                <div className="mb-2 border-t border-[#384656]" />
-              )}
-              {section.items.map((item, itemIdx) => {
-                const globalIndex = globalOffset + itemIdx;
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                const isSelected = globalIndex === selectedIndex;
+            {/* Group items */}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
+              const currentFlatIndex = flatIndex;
+              const isSelected = currentFlatIndex === selectedIndex;
+              flatIndex++;
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded px-3 py-2.5 transition-all",
+                    "text-[#C5C6C7] hover:bg-[#384656] hover:text-[#66FCF1]",
+                    isActive && "border-l-2 border-[#66FCF1] bg-[#384656] text-[#66FCF1]",
+                    isSelected && !isActive && "ring-1 ring-[#66FCF1] ring-opacity-50"
+                  )}
+                  onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
+                >
+                  {/* Active indicator glow */}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5"></div>
+                  )}
+
+                  {/* Icon */}
+                  <Icon
                     className={cn(
-                      "group relative flex items-center gap-3 rounded px-3 py-2.5 transition-all",
-                      "text-[#C5C6C7] hover:bg-[#384656] hover:text-[#66FCF1]",
-                      isActive && "border-l-2 border-[#66FCF1] bg-[#384656] text-[#66FCF1]",
-                      isSelected && !isActive && "ring-1 ring-[#66FCF1] ring-opacity-50"
+                      "h-5 w-5 shrink-0 transition-colors",
+                      isActive && "text-[#66FCF1]"
                     )}
-                    onMouseEnter={() => setSelectedIndex(globalIndex)}
-                  >
-                    {/* Active indicator glow */}
-                    {isActive && (
-                      <div className="absolute inset-0 rounded bg-[#66FCF1] opacity-5"></div>
-                    )}
+                  />
 
-                    {/* Icon */}
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 shrink-0 transition-colors",
-                        isActive && "text-[#66FCF1]"
-                      )}
-                    />
+                  {/* Label */}
+                  {!collapsed && (
+                    <span className="font-mono text-sm font-medium">{item.label}</span>
+                  )}
 
-                    {/* Label */}
-                    {!collapsed && (
-                      <span className="font-mono text-sm font-medium">{item.label}</span>
-                    )}
-
-                    {/* Tooltip for collapsed state */}
-                    {collapsed && (
-                      <div className="absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded border border-[#384656] bg-[#1F2833] px-3 py-2 font-mono text-sm text-[#C5C6C7] group-hover:block">
-                        {section.title ? `${section.title}: ${item.label}` : item.label}
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+                  {/* Tooltip for collapsed state */}
+                  {collapsed && (
+                    <div className="absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded border border-[#384656] bg-[#1F2833] px-3 py-2 font-mono text-sm text-[#C5C6C7] group-hover:block">
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Collapse Toggle */}

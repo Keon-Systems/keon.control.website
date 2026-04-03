@@ -54,6 +54,8 @@ export const collectiveObservabilityQueryKeys = {
     lineage: (preparedRequestId: string) =>
       ["collective", "prepared-effects", "lineage", preparedRequestId] as const,
   },
+<<<<<<< HEAD
+=======
   executionEligibility: {
     all: ["collective", "execution-eligibility"] as const,
     detail: (preparedEffectId: string) =>
@@ -69,4 +71,5 @@ export const collectiveObservabilityQueryKeys = {
     detail: (preparedEffectId: string) =>
       ["collective", "invocation-descriptor", "detail", preparedEffectId] as const,
   },
+>>>>>>> origin/main
 } as const;
