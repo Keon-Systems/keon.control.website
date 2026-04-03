@@ -28,45 +28,85 @@ interface ReplayPath {
   id: string;
   label: string;
   sublabel: string;
+  rejectionReason?: string;
+  rejectionDetail?: string;
   riskLevel: "low" | "medium" | "high";
   outcome: "approved" | "denied" | "selected";
 }
 
+interface GovernanceCheck {
+  label: string;
+  status: "pass" | "block";
+  detail: string;
+}
+
 interface ReplayScenario {
   id: string;
+  directive: string;
+  directiveSource: string;
   goalLabel: string;
   goalDescription: string;
   paths: ReplayPath[];
   selectedPathId: string;
+  selectedWhy: string;
+  outcomeMeaning: string;
+  governanceChecks: GovernanceCheck[];
   receiptRef: string;
+  policyHash: string;
+  lineageRef: string;
+  correlationRef: string;
 }
 
 const SCENARIOS: ReplayScenario[] = [
   {
     id: "db-migration",
+    directive: "Authorize a production schema upgrade with rollback protection.",
+    directiveSource: "Release directive · platform deployment runbook",
     goalLabel: "SCHEMA MIGRATION",
     goalDescription: "Database upgrade · v4.2.1 → v4.3.0",
     paths: [
-      { id: "p1", label: "Execute now", sublabel: "No snapshot", riskLevel: "high", outcome: "denied" },
-      { id: "p2", label: "Stage first", sublabel: "24h validation", riskLevel: "medium", outcome: "denied" },
+      { id: "p1", label: "Execute now", sublabel: "No snapshot", rejectionReason: "No rollback path", rejectionDetail: "Rejected because recovery evidence is missing before execution.", riskLevel: "high", outcome: "denied" },
+      { id: "p2", label: "Stage first", sublabel: "24h validation", rejectionReason: "Policy window not met", rejectionDetail: "Blocked because the validation window did not satisfy the release policy.", riskLevel: "medium", outcome: "denied" },
       { id: "p3", label: "Snapshot + run", sublabel: "Rollback-safe", riskLevel: "low", outcome: "selected" },
-      { id: "p4", label: "Defer 48h", sublabel: "Maintenance window", riskLevel: "low", outcome: "denied" },
+      { id: "p4", label: "Defer 48h", sublabel: "Maintenance window", rejectionReason: "Change blocked by urgency", rejectionDetail: "Denied because deferral would violate the directive's approved remediation window.", riskLevel: "low", outcome: "denied" },
     ],
     selectedPathId: "p3",
+    selectedWhy: "Selected because it satisfies rollback safety, maintenance policy, and release timing in one governed path.",
+    outcomeMeaning: "Execution is authorized before the migration runs. The change is approved, but only within the governed conditions captured in the receipt.",
+    governanceChecks: [
+      { label: "Rollback evidence", status: "pass", detail: "Snapshot requirement satisfied before authorization." },
+      { label: "Maintenance policy", status: "pass", detail: "Window and operator scope match the approved release policy." },
+      { label: "Unsafe execution path", status: "block", detail: "Immediate execution without rollback evidence was denied." },
+    ],
     receiptRef: "K-9A4C",
+    policyHash: "pol_7FA2",
+    lineageRef: "lin_db_43",
+    correlationRef: "corr_rel_842",
   },
   {
     id: "iam-expansion",
+    directive: "Authorize elevated service-account access for a bounded production task.",
+    directiveSource: "Access directive · deployment approval chain",
     goalLabel: "ACCESS EXPANSION",
     goalDescription: "Service account · elevated IAM request",
     paths: [
-      { id: "p1", label: "Grant full role", sublabel: "Unrestricted", riskLevel: "high", outcome: "denied" },
-      { id: "p2", label: "Scoped policy", sublabel: "Resource-bound", riskLevel: "medium", outcome: "denied" },
+      { id: "p1", label: "Grant full role", sublabel: "Unrestricted", rejectionReason: "Privilege exceeds policy", rejectionDetail: "Rejected because the requested permission scope exceeds the allowed least-privilege envelope.", riskLevel: "high", outcome: "denied" },
+      { id: "p2", label: "Scoped policy", sublabel: "Resource-bound", rejectionReason: "Missing strong auth", rejectionDetail: "Blocked because the directive requires MFA-backed authorization for elevated access.", riskLevel: "medium", outcome: "denied" },
       { id: "p3", label: "MFA + scoped", sublabel: "Least-privilege", riskLevel: "low", outcome: "selected" },
-      { id: "p4", label: "Escalate review", sublabel: "Human approval", riskLevel: "low", outcome: "denied" },
+      { id: "p4", label: "Escalate review", sublabel: "Human approval", rejectionReason: "Execution paused pending queue", rejectionDetail: "Rejected for this directive because queue latency would miss the approved execution window.", riskLevel: "low", outcome: "denied" },
     ],
     selectedPathId: "p3",
+    selectedWhy: "Selected because it meets least-privilege policy, requires strong authentication, and keeps the task inside the approved execution window.",
+    outcomeMeaning: "Access is authorized before use. The service account is approved only for the governed scope captured by the receipt and lineage references.",
+    governanceChecks: [
+      { label: "Least-privilege scope", status: "pass", detail: "Access narrowed to the approved resource boundary." },
+      { label: "Strong authorization", status: "pass", detail: "MFA-backed approval satisfied the elevated access requirement." },
+      { label: "Unbounded privilege request", status: "block", detail: "Broad role grant denied by policy constraints." },
+    ],
     receiptRef: "K-2E7F",
+    policyHash: "pol_C91D",
+    lineageRef: "lin_iam_18",
+    correlationRef: "corr_iam_331",
   },
 ];
 
@@ -78,8 +118,9 @@ type ReplayPhase =
   | "goal_appear"
   | "paths_branch"
   | "evaluating"
-  | "challenging"
+  | "rejection_reasons"
   | "selecting"
+  | "governance"
   | "approved"
   | "hold_result"
   | "fade_out";
@@ -89,9 +130,10 @@ const PHASE_DURATIONS_MS: Record<ReplayPhase, number> = {
   goal_appear: 900,
   paths_branch: 1400,
   evaluating: 1800,
-  challenging: 1600,
+  rejection_reasons: 1500,
   selecting: 1000,
-  approved: 1200,
+  governance: 1000,
+  approved: 1400,
   hold_result: 2400,
   fade_out: 700,
 };
@@ -101,8 +143,9 @@ const PHASE_ORDER: ReplayPhase[] = [
   "goal_appear",
   "paths_branch",
   "evaluating",
-  "challenging",
+  "rejection_reasons",
   "selecting",
+  "governance",
   "approved",
   "hold_result",
   "fade_out",
@@ -124,7 +167,7 @@ const RISK_LABELS = {
 
 // ─── SVG Layout Constants ─────────────────────────────────────────────────────
 
-const VB_W = 480;
+const VB_W = 560;
 const VB_H = 370;
 
 const GOAL_CX = VB_W / 2;
@@ -133,7 +176,7 @@ const GOAL_W = 240;
 const GOAL_H = 38;
 
 // 4 path columns
-const PATH_XS = [52, 164, 300, 420];
+const PATH_XS = [48, 172, 320, 432];
 const PATH_Y = 116;
 const PATH_W = 92;
 const PATH_H = 30;
@@ -142,11 +185,25 @@ const PATH_H = 30;
 const EVAL_Y = 208;
 const EVAL_R = 14;
 
+// Governance row
+const GOVERNANCE_CX = GOAL_CX;
+const GOVERNANCE_Y = 262;
+const GOVERNANCE_W = 188;
+const GOVERNANCE_H = 28;
+
 // Result
 const RESULT_CX = GOAL_CX;
-const RESULT_Y = 290;
-const RESULT_W = 180;
-const RESULT_H = 44;
+const RESULT_Y = 304;
+const RESULT_W = 236;
+const RESULT_H = 50;
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#66FCF1]">
+      {children}
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -155,8 +212,11 @@ export function CollectiveReplay({ className }: { className?: string }) {
   const [phase, setPhase] = React.useState<ReplayPhase>("blank");
   const [phaseIndex, setPhaseIndex] = React.useState(0);
   const [opacity, setOpacity] = React.useState(1);
+  const [inspectionOpen, setInspectionOpen] = React.useState(false);
 
   const scenario = SCENARIOS[scenarioIndex % SCENARIOS.length];
+  const selectedPath = scenario.paths.find((path) => path.id === scenario.selectedPathId) ?? scenario.paths[0];
+  const rejectedPaths = scenario.paths.filter((path) => path.outcome === "denied");
 
   // Advance phases
   React.useEffect(() => {
@@ -185,11 +245,12 @@ export function CollectiveReplay({ className }: { className?: string }) {
   }, [phase]);
 
   const show = {
-    goal: ["goal_appear", "paths_branch", "evaluating", "challenging", "selecting", "approved", "hold_result"].includes(phase),
-    paths: ["paths_branch", "evaluating", "challenging", "selecting", "approved", "hold_result"].includes(phase),
-    eval: ["evaluating", "challenging", "selecting", "approved", "hold_result"].includes(phase),
-    challenge: ["challenging", "selecting", "approved", "hold_result"].includes(phase),
-    selected: ["selecting", "approved", "hold_result"].includes(phase),
+    goal: ["goal_appear", "paths_branch", "evaluating", "rejection_reasons", "selecting", "governance", "approved", "hold_result"].includes(phase),
+    paths: ["paths_branch", "evaluating", "rejection_reasons", "selecting", "governance", "approved", "hold_result"].includes(phase),
+    eval: ["evaluating", "rejection_reasons", "selecting", "governance", "approved", "hold_result"].includes(phase),
+    rejectionReasons: ["rejection_reasons", "selecting", "governance", "approved", "hold_result"].includes(phase),
+    selected: ["selecting", "governance", "approved", "hold_result"].includes(phase),
+    governance: ["governance", "approved", "hold_result"].includes(phase),
     result: ["approved", "hold_result"].includes(phase),
   };
 
@@ -207,10 +268,15 @@ export function CollectiveReplay({ className }: { className?: string }) {
 
       {/* Header */}
       <div className="relative flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
-        <div className="flex items-center gap-2">
-          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#45A29E]" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#45A29E]">
-            Collective Engine
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#45A29E]" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#45A29E]">
+              Collective Engine
+            </span>
+          </div>
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/26">
+            Decision authorized before execution
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -222,11 +288,27 @@ export function CollectiveReplay({ className }: { className?: string }) {
       </div>
 
       {/* Scenario label */}
-      <div className="relative border-b border-white/[0.04] px-5 py-2.5">
-        <div className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">
-          {scenario.goalLabel}
+      <div className="relative flex items-center justify-between gap-4 border-b border-white/[0.04] px-5 py-2.5">
+        <div>
+          <div className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">
+            {scenario.goalLabel}
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-white/30">{scenario.goalDescription}</div>
         </div>
-        <div className="mt-0.5 font-mono text-[10px] text-white/30">{scenario.goalDescription}</div>
+        <button
+          type="button"
+          onClick={() => setInspectionOpen((value) => !value)}
+          className={cn(
+            "shrink-0 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors",
+            inspectionOpen
+              ? "border-[#66FCF1]/60 bg-[#66FCF1]/10 text-[#66FCF1]"
+              : "border-white/[0.12] bg-white/[0.03] text-white/56 hover:border-[#45A29E]/40 hover:text-white/72"
+          )}
+          aria-expanded={inspectionOpen}
+          aria-controls="collective-deep-inspection"
+        >
+          {inspectionOpen ? "Close inspection" : "Inspect decision"}
+        </button>
       </div>
 
       {/* SVG visualization */}
@@ -276,7 +358,7 @@ export function CollectiveReplay({ className }: { className?: string }) {
             const px = PATH_XS[i];
             const pathCX = px + PATH_W / 2;
             const isSelected = path.id === scenario.selectedPathId;
-            const isDenied = show.challenge && path.outcome === "denied";
+            const isDenied = show.rejectionReasons && path.outcome === "denied";
             return (
               <line
                 key={`pe-${path.id}`}
@@ -350,15 +432,15 @@ export function CollectiveReplay({ className }: { className?: string }) {
           {scenario.paths.map((path, i) => {
             const px = PATH_XS[i];
             const pathCX = px + PATH_W / 2;
-            const isDenied = show.challenge && path.outcome === "denied";
+            const isDenied = show.rejectionReasons && path.outcome === "denied";
             const isSelected = show.selected && path.id === scenario.selectedPathId;
-            const isEval = show.eval && !show.challenge;
+            const isEval = show.eval && !show.rejectionReasons;
 
             return (
               <g
                 key={`pn-${path.id}`}
                 style={{
-                  opacity: show.paths ? (isDenied && show.challenge ? 0.25 : 1) : 0,
+                  opacity: show.paths ? (isDenied && show.rejectionReasons ? 0.25 : 1) : 0,
                   transition: "opacity 0.5s ease",
                 }}
               >
@@ -415,7 +497,7 @@ export function CollectiveReplay({ className }: { className?: string }) {
           {/* ── Eval Nodes ── */}
           {scenario.paths.map((path, i) => {
             const pathCX = PATH_XS[i] + PATH_W / 2;
-            const isDenied = show.challenge && path.outcome === "denied";
+            const isDenied = show.rejectionReasons && path.outcome === "denied";
             const isSelected = show.selected && path.id === scenario.selectedPathId;
             const isEval = show.eval;
 
@@ -437,7 +519,7 @@ export function CollectiveReplay({ className }: { className?: string }) {
                   strokeOpacity={isDenied ? 0.5 : isSelected ? 0.9 : 0.5}
                 />
                 {/* Eval pulse ring */}
-                {isEval && !show.challenge && (
+                {isEval && !show.rejectionReasons && (
                   <circle
                     cx={pathCX}
                     cy={EVAL_Y}
@@ -503,6 +585,84 @@ export function CollectiveReplay({ className }: { className?: string }) {
             );
           })}
 
+          {/* ── Rejection reasons ── */}
+          {scenario.paths.map((path, i) => {
+            if (path.outcome !== "denied") return null;
+            const pathCX = PATH_XS[i] + PATH_W / 2;
+            return (
+              <g
+                key={`rr-${path.id}`}
+                style={{
+                  opacity: show.rejectionReasons ? 1 : 0,
+                  transition: "opacity 0.45s ease",
+                }}
+              >
+                <text
+                  x={pathCX}
+                  y={EVAL_Y + 29}
+                  textAnchor="middle"
+                  fill="#FF6A6A"
+                  fontSize="6.5"
+                  fontFamily="DM Mono, monospace"
+                  letterSpacing="0.06em"
+                >
+                  {path.rejectionReason}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* ── Governance check ── */}
+          <g
+            style={{
+              opacity: show.governance ? 1 : 0,
+              transition: "opacity 0.5s ease",
+            }}
+          >
+            <path
+              d={`M ${RESULT_CX} ${EVAL_Y + EVAL_R} C ${RESULT_CX} ${EVAL_Y + 30} ${GOVERNANCE_CX} ${GOVERNANCE_Y - 14} ${GOVERNANCE_CX} ${GOVERNANCE_Y}`}
+              fill="none"
+              stroke="#66FCF1"
+              strokeWidth="1.2"
+              strokeOpacity="0.7"
+              filter="url(#reactor-glow)"
+            />
+            <rect
+              x={GOVERNANCE_CX - GOVERNANCE_W / 2}
+              y={GOVERNANCE_Y}
+              width={GOVERNANCE_W}
+              height={GOVERNANCE_H}
+              rx={2}
+              fill="rgba(15,24,40,0.92)"
+              stroke="#45A29E"
+              strokeWidth="1"
+              strokeOpacity="0.7"
+            />
+            <text
+              x={GOVERNANCE_CX}
+              y={GOVERNANCE_Y + 11}
+              textAnchor="middle"
+              fill="#66FCF1"
+              fontSize="8"
+              fontFamily="DM Mono, monospace"
+              letterSpacing="0.18em"
+              fontWeight="600"
+            >
+              GOVERNANCE CHECK
+            </text>
+            <text
+              x={GOVERNANCE_CX}
+              y={GOVERNANCE_Y + 21}
+              textAnchor="middle"
+              fill="#7E8E9E"
+              fontSize="6.5"
+              fontFamily="DM Mono, monospace"
+              letterSpacing="0.06em"
+            >
+              POLICY VERIFIED · EXECUTION AUTHORIZED
+            </text>
+          </g>
+
           {/* ── Result Badge ── */}
           <g
             style={{
@@ -533,12 +693,20 @@ export function CollectiveReplay({ className }: { className?: string }) {
               strokeOpacity="0.2"
               filter="url(#glow-strong)"
             />
+            <path
+              d={`M ${GOVERNANCE_CX} ${GOVERNANCE_Y + GOVERNANCE_H} C ${GOVERNANCE_CX} ${GOVERNANCE_Y + GOVERNANCE_H + 8} ${RESULT_CX} ${RESULT_Y - 8} ${RESULT_CX} ${RESULT_Y}`}
+              fill="none"
+              stroke="#66FCF1"
+              strokeWidth="1.5"
+              strokeOpacity={show.result ? 0.7 : 0}
+              filter="url(#reactor-glow)"
+            />
             <text
               x={RESULT_CX}
-              y={RESULT_Y + 18}
+              y={RESULT_Y + 16}
               textAnchor="middle"
               fill="#66FCF1"
-              fontSize="12"
+              fontSize="11"
               fontFamily="DM Mono, monospace"
               letterSpacing="0.2em"
               fontWeight="600"
@@ -547,14 +715,25 @@ export function CollectiveReplay({ className }: { className?: string }) {
             </text>
             <text
               x={RESULT_CX}
-              y={RESULT_Y + 33}
+              y={RESULT_Y + 29}
               textAnchor="middle"
               fill="#45A29E"
-              fontSize="8"
+              fontSize="7.5"
               fontFamily="DM Mono, monospace"
-              letterSpacing="0.15em"
+              letterSpacing="0.12em"
             >
-              RECEIPT #{scenario.receiptRef} · ANCHORED
+              RECEIPT #{scenario.receiptRef} · POLICY {scenario.policyHash}
+            </text>
+            <text
+              x={RESULT_CX}
+              y={RESULT_Y + 40}
+              textAnchor="middle"
+              fill="#7E8E9E"
+              fontSize="6.5"
+              fontFamily="DM Mono, monospace"
+              letterSpacing="0.08em"
+            >
+              LINEAGE {scenario.lineageRef} · ANCHORED BEFORE EXECUTION
             </text>
           </g>
 
@@ -569,11 +748,155 @@ export function CollectiveReplay({ className }: { className?: string }) {
             letterSpacing="0.1em"
           >
             {phase === "evaluating" && "EVALUATING PATHS"}
-            {phase === "challenging" && "CHALLENGING DECISIONS"}
+            {phase === "rejection_reasons" && "REJECTING UNSAFE PATHS"}
             {phase === "selecting" && "GOVERNING SELECTION"}
+            {phase === "governance" && "VERIFYING POLICY CONSTRAINTS"}
             {(phase === "approved" || phase === "hold_result") && "COLLECTIVE OUTCOME REACHED"}
           </text>
         </svg>
+      </div>
+
+      <div
+        id="collective-deep-inspection"
+        className={cn(
+          "relative overflow-hidden border-t border-white/[0.06] transition-[max-height,opacity] duration-300 ease-out",
+          inspectionOpen ? "max-h-[840px] opacity-100" : "max-h-0 opacity-0"
+        )}
+        data-testid="deep-inspection-panel"
+        aria-hidden={!inspectionOpen}
+      >
+        <div className="border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(102,252,241,0.06),rgba(6,10,16,0))] px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/34">
+                Governed trace
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#66FCF1]">
+                Deep inspection mode
+              </div>
+              <p className="max-w-3xl font-mono text-[11px] leading-6 text-white/60">
+                Governed understanding remains anchored in causal history and reconstructable from receipts.
+              </p>
+            </div>
+            <div className="rounded-[2px] border border-[#66FCF1]/25 bg-[#66FCF1]/8 px-3 py-2">
+              <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">
+                Selected path
+              </div>
+              <div className="mt-1 font-mono text-[11px] tracking-[0.06em] text-[#66FCF1]">
+                {selectedPath.label} · {selectedPath.sublabel}
+              </div>
+              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/42">
+                Approved after governance check
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 px-5 py-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+          <section className="space-y-4">
+            <div className="space-y-2 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+              <SectionTitle>Directive</SectionTitle>
+              <p className="font-mono text-[12px] leading-6 text-[#EAEAEA]">{scenario.directive}</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/38">
+                {scenario.directiveSource}
+              </p>
+            </div>
+
+            <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+              <SectionTitle>Decision Path</SectionTitle>
+              <div className="rounded-[2px] border border-[#66FCF1]/18 bg-[#66FCF1]/6 p-3">
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#66FCF1]">
+                  Winning path
+                </div>
+                <div className="mt-2 font-mono text-[12px] text-[#EAEAEA]">
+                  {selectedPath.label} · {selectedPath.sublabel}
+                </div>
+                <p className="mt-2 font-mono text-[11px] leading-6 text-white/58">{scenario.selectedWhy}</p>
+              </div>
+
+              <div className="space-y-2">
+                {rejectedPaths.map((path) => (
+                  <div
+                    key={path.id}
+                    className="rounded-[2px] border border-[#FF2E2E]/16 bg-[#FF2E2E]/[0.03] px-3 py-2.5"
+                    data-testid={`rejected-branch-${path.id}`}
+                  >
+                    <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#FF6A6A]">
+                      {path.label}
+                    </div>
+                    <div className="mt-1 font-mono text-[11px] text-[#EAEAEA]">{path.rejectionReason}</div>
+                    <p className="mt-1 font-mono text-[10px] leading-5 text-white/48">{path.rejectionDetail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+              <SectionTitle>Outcome Meaning</SectionTitle>
+              <p className="font-mono text-[11px] leading-6 text-white/62">{scenario.outcomeMeaning}</p>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+              <SectionTitle>Governance Checks</SectionTitle>
+              <div className="space-y-2">
+                {scenario.governanceChecks.map((check) => (
+                  <div
+                    key={check.label}
+                    className="flex items-start gap-3 rounded-[2px] border border-white/[0.05] bg-white/[0.02] px-3 py-2.5"
+                  >
+                    <div
+                      className={cn(
+                        "mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full",
+                        check.status === "pass" ? "bg-[#66FCF1]" : "bg-[#FF2E2E]"
+                      )}
+                    />
+                    <div className="space-y-1">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#EAEAEA]">
+                        {check.label}
+                      </div>
+                      <p className="font-mono text-[10px] leading-5 text-white/48">{check.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+                <SectionTitle>Receipt Anchors</SectionTitle>
+                <div className="space-y-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
+                  <div>Receipt: <span className="text-[#66FCF1]">{scenario.receiptRef}</span></div>
+                  <div>Policy hash: <span className="text-[#66FCF1]">{scenario.policyHash}</span></div>
+                  <div>Correlation: <span className="text-[#66FCF1]">{scenario.correlationRef}</span></div>
+                  <div>Lineage: <span className="text-[#66FCF1]">{scenario.lineageRef}</span></div>
+                </div>
+                <p className="font-mono text-[10px] leading-5 text-white/46">
+                  Decision lineage is reconstructable from receipts.
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-[2px] border border-white/[0.06] bg-black/15 p-4">
+                <SectionTitle>Causal Lineage</SectionTitle>
+                <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/44">
+                  <span>Directive</span>
+                  <span className="text-[#45A29E]">→</span>
+                  <span>Intent</span>
+                  <span className="text-[#45A29E]">→</span>
+                  <span>{selectedPath.label}</span>
+                  <span className="text-[#45A29E]">→</span>
+                  <span>Governance</span>
+                  <span className="text-[#45A29E]">→</span>
+                  <span>Approval</span>
+                </div>
+                <p className="font-mono text-[10px] leading-5 text-white/46">
+                  This approval is anchored in causal history.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
       {/* Disclaimer — mandatory, always present */}
