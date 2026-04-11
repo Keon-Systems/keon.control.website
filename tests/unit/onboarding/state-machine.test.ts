@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultOnboardingState, sanitizeOnboardingState, transitionOnboardingState } from "./state-machine";
+import { defaultOnboardingState, sanitizeOnboardingState, transitionOnboardingState } from "@/lib/onboarding/state-machine";
 
 describe("transitionOnboardingState", () => {
   it("moves through the happy path in order", () => {

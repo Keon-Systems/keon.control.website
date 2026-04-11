@@ -1,4 +1,11 @@
-export const onboardingSteps = ["WELCOME", "DEFINE_GOALS", "CONFIRM_ACCESS", "SET_GUARDRAILS", "READY"] as const;
+export const onboardingSteps = [
+  "WELCOME",
+  "DEFINE_GOALS",
+  "CONFIRM_ACCESS",
+  "SELECT_INTEGRATION",
+  "SET_GUARDRAILS",
+  "READY",
+] as const;
 
 export type OnboardingStep = (typeof onboardingSteps)[number];
 
@@ -14,10 +21,14 @@ export const guardrailPresetOptions = ["strict", "balanced", "flexible"] as cons
 
 export type GuardrailPreset = (typeof guardrailPresetOptions)[number];
 
+export type IntegrationMode = "BYO_AI" | "COLLECTIVE";
+
 export interface OnboardingState {
   currentStep: OnboardingStep;
   selectedGoals: OnboardingGoal[];
   workspaceId: string | null;
+  integrationStepCompleted: boolean;
+  selectedIntegrationMode: IntegrationMode | undefined;
   guardrailPreset: GuardrailPreset | null;
   completed: boolean;
 }
@@ -27,6 +38,7 @@ export type OnboardingEvent =
   | { type: "START_SETUP" }
   | { type: "SAVE_GOALS"; payload: { selectedGoals: OnboardingGoal[] } }
   | { type: "CONFIRM_ACCESS"; payload: { workspaceId: string } }
+  | { type: "ADVANCE_INTEGRATION"; payload?: { selectedMode?: IntegrationMode } }
   | { type: "APPLY_GUARDRAILS"; payload: { guardrailPreset: GuardrailPreset } }
   | { type: "FINISH_ONBOARDING" }
   | { type: "RESET" };
@@ -35,6 +47,8 @@ export const defaultOnboardingState: OnboardingState = {
   currentStep: "WELCOME",
   selectedGoals: [],
   workspaceId: null,
+  integrationStepCompleted: false,
+  selectedIntegrationMode: undefined,
   guardrailPreset: null,
   completed: false,
 };
@@ -51,9 +65,17 @@ export function isGuardrailPreset(value: unknown): value is GuardrailPreset {
   return typeof value === "string" && guardrailPresetOptions.includes(value as GuardrailPreset);
 }
 
+export function isIntegrationMode(value: unknown): value is IntegrationMode {
+  return value === "BYO_AI" || value === "COLLECTIVE";
+}
+
 export function sanitizeOnboardingState(input: Partial<OnboardingState> | null | undefined): OnboardingState {
   const selectedGoals = Array.isArray(input?.selectedGoals) ? input.selectedGoals.filter(isOnboardingGoal) : [];
   const workspaceId = typeof input?.workspaceId === "string" && input.workspaceId.length > 0 ? input.workspaceId : null;
+  const integrationStepCompleted = input?.integrationStepCompleted === true;
+  const selectedIntegrationMode = isIntegrationMode(input?.selectedIntegrationMode)
+    ? input.selectedIntegrationMode
+    : undefined;
   const guardrailPreset = isGuardrailPreset(input?.guardrailPreset) ? input.guardrailPreset : null;
   const completed = input?.completed === true;
   const currentStep = completed
@@ -66,6 +88,8 @@ export function sanitizeOnboardingState(input: Partial<OnboardingState> | null |
     currentStep,
     selectedGoals,
     workspaceId,
+    integrationStepCompleted,
+    selectedIntegrationMode,
     guardrailPreset,
     completed,
   };
@@ -87,17 +111,12 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       if (state.currentStep !== "WELCOME" || state.completed) {
         return state;
       }
-
-      return {
-        ...state,
-        currentStep: "DEFINE_GOALS",
-      };
+      return { ...state, currentStep: "DEFINE_GOALS" };
     }
     case "SAVE_GOALS": {
       if (state.currentStep === "WELCOME" || event.payload.selectedGoals.length === 0) {
         return state;
       }
-
       return {
         ...state,
         selectedGoals: event.payload.selectedGoals,
@@ -108,10 +127,20 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       if (state.selectedGoals.length === 0) {
         return state;
       }
-
       return {
         ...state,
         workspaceId: event.payload.workspaceId,
+        currentStep: "SELECT_INTEGRATION",
+      };
+    }
+    case "ADVANCE_INTEGRATION": {
+      if (!state.workspaceId) {
+        return state;
+      }
+      return {
+        ...state,
+        integrationStepCompleted: true,
+        selectedIntegrationMode: event.payload?.selectedMode ?? state.selectedIntegrationMode,
         currentStep: "SET_GUARDRAILS",
       };
     }
@@ -119,7 +148,6 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       if (!state.workspaceId) {
         return state;
       }
-
       return {
         ...state,
         guardrailPreset: event.payload.guardrailPreset,
@@ -130,12 +158,7 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       if (state.currentStep !== "READY" || !state.guardrailPreset) {
         return state;
       }
-
-      return {
-        ...state,
-        completed: true,
-        currentStep: "READY",
-      };
+      return { ...state, completed: true, currentStep: "READY" };
     }
     case "RESET": {
       return defaultOnboardingState;
