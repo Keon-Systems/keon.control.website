@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultOnboardingState, sanitizeOnboardingState, transitionOnboardingState } from "@/lib/onboarding/state-machine";
+import { defaultOnboardingState, sanitizeOnboardingState, transitionOnboardingState, type OnboardingState } from "@/lib/onboarding/state-machine";
 
 describe("transitionOnboardingState", () => {
   it("moves through the happy path in order", () => {
@@ -129,5 +129,19 @@ describe("SELECT_INTEGRATION step", () => {
       selectedIntegrationMode: "INVALID" as never,
     });
     expect(result.selectedIntegrationMode).toBeUndefined();
+  });
+
+  it("ADVANCE_INTEGRATION is a no-op when not at SELECT_INTEGRATION step", () => {
+    const atReady: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "READY",
+      workspaceId: "tenant_123",
+      integrationStepCompleted: true,
+      guardrailPreset: "balanced",
+      completed: true,
+    };
+    const unchanged = transitionOnboardingState(atReady, { type: "ADVANCE_INTEGRATION" });
+    expect(unchanged.currentStep).toBe("READY");
+    expect(unchanged.integrationStepCompleted).toBe(true);
   });
 });

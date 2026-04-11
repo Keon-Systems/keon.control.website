@@ -134,7 +134,7 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       };
     }
     case "ADVANCE_INTEGRATION": {
-      if (!state.workspaceId) {
+      if (!state.workspaceId || state.currentStep !== "SELECT_INTEGRATION") {
         return state;
       }
       return {
