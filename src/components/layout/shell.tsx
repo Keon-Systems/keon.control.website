@@ -23,12 +23,15 @@ const FIRST_RUN_ROUTES = new Set([
   "/welcome",
   "/setup",
   "/onboarding",
-  "/collective/showcase",
 ]);
+
+/** Routes that bypass Shell entirely — no TopBar, no Sidebar, no padding. */
+const BARE_ROUTES = new Set(["/collective/showcase"]);
 
 export function Shell({ children, className }: ShellProps) {
   const pathname = usePathname();
-  const isOnboardingRoute = FIRST_RUN_ROUTES.has(pathname);
+  const isBareRoute = BARE_ROUTES.has(pathname);
+  const isOnboardingRoute = !isBareRoute && FIRST_RUN_ROUTES.has(pathname);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(isOnboardingRoute);
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
   const { state } = useIncidentMode();
@@ -59,6 +62,10 @@ export function Shell({ children, className }: ShellProps) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOnboardingRoute]);
+
+  if (isBareRoute) {
+    return <>{children}</>;
+  }
 
   if (state.active) {
     return <IncidentShell>{children}</IncidentShell>;
