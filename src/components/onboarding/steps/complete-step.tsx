@@ -7,9 +7,9 @@ import { useOnboardingState } from "@/lib/onboarding/store";
 import { useRouter } from "next/navigation";
 
 const goalLabels: Record<string, string> = {
-  "govern-ai-actions": "Review important AI actions",
-  "memory-and-context": "Protect memory and context",
-  "oversight-and-collaboration": "Add collaborative review",
+  "govern-ai-actions": "Governance Runtime",
+  "memory-and-context": "Cortex",
+  "oversight-and-collaboration": "Collective",
 };
 
 const guardrailLabels: Record<string, string> = {
