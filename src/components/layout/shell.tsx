@@ -5,6 +5,7 @@ import { IncidentShell } from "@/components/incident";
 import { AppReadyGate } from "@/components/onboarding/route-gates";
 import { useIncidentMode } from "@/lib/incident-mode";
 import { useIncidentTrigger } from "@/lib/use-incident-trigger";
+import { BARE_ROUTES } from "@/lib/layout/bare-routes";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -24,9 +25,6 @@ const FIRST_RUN_ROUTES = new Set([
   "/setup",
   "/onboarding",
 ]);
-
-/** Routes that bypass Shell entirely — no TopBar, no Sidebar, no padding. */
-const BARE_ROUTES = new Set(["/collective/showcase"]);
 
 export function Shell({ children, className }: ShellProps) {
   const pathname = usePathname();

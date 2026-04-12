@@ -1,11 +1,9 @@
 "use client";
 
+import { BARE_ROUTES } from "@/lib/layout/bare-routes";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { CollectiveBanner } from "./collective-banner";
-
-/** Routes under /collective that should render without the banner and wrapper padding. */
-const BARE_ROUTES = new Set(["/collective/showcase"]);
 
 interface CollectiveLayoutShellProps {
   children: React.ReactNode;
