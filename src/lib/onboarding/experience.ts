@@ -1,6 +1,6 @@
 import type { OnboardingState, OnboardingStep } from "./state-machine";
 
-export type SetupRouteKey = "welcome" | "goals" | "access" | "guardrails" | "ready";
+export type SetupRouteKey = "welcome" | "goals" | "access" | "integration" | "guardrails" | "ready";
 export type ChecklistStatus = "complete" | "current" | "upcoming";
 
 export interface SetupChecklistItem {
@@ -64,6 +64,7 @@ export const stepRouteMap: Record<OnboardingStep, SetupRouteKey> = {
   WELCOME: "welcome",
   DEFINE_GOALS: "goals",
   CONFIRM_ACCESS: "access",
+  SELECT_INTEGRATION: "integration",
   SET_GUARDRAILS: "guardrails",
   READY: "ready",
 };
@@ -72,6 +73,7 @@ export const routeStepMap: Record<SetupRouteKey, OnboardingStep> = {
   welcome: "WELCOME",
   goals: "DEFINE_GOALS",
   access: "CONFIRM_ACCESS",
+  integration: "SELECT_INTEGRATION",
   guardrails: "SET_GUARDRAILS",
   ready: "READY",
 };
@@ -80,6 +82,7 @@ export const stepLabels: Record<OnboardingStep, string> = {
   WELCOME: "Welcome",
   DEFINE_GOALS: "Define your goal",
   CONFIRM_ACCESS: "Confirm workspace access",
+  SELECT_INTEGRATION: "Choose operating model",
   SET_GUARDRAILS: "Set starter guardrails",
   READY: "Ready to use",
 };
@@ -91,6 +94,10 @@ export function getNextRequiredStep(state: OnboardingState): OnboardingStep {
 
   if (!state.workspaceId) {
     return "CONFIRM_ACCESS";
+  }
+
+  if (!state.integrationStepCompleted) {
+    return "SELECT_INTEGRATION";
   }
 
   if (!state.guardrailPreset) {
@@ -119,6 +126,8 @@ export function getCurrentBlocker(state: OnboardingState) {
       return "Choose what you want Keon to manage first.";
     case "CONFIRM_ACCESS":
       return "Confirm the workspace and environment you want to prepare.";
+    case "SELECT_INTEGRATION":
+      return "Review how Keon governs decisions before continuing.";
     case "SET_GUARDRAILS":
       return "Choose the starter guardrails Keon should apply.";
     case "READY":
