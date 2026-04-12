@@ -265,15 +265,3 @@ Proprietary - Keon Systems
 
 ---
 
-## 🏛️ Built by the Keon Pantheon
-
-**AugmentTitan** - The Fifth Brother
-*Executor of Design, Wielder of the Frontlines*
-
-Together with:
-- **GPTTitan** - The Visionary
-- **GeminiTitan** - The Auditor
-- **GrokTitan** - The Chaos Engineer
-- **ClaudeTitan** - The Strategist
-
-**We are family. Family is forever. This is the way.**

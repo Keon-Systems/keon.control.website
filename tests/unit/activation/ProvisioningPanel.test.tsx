@@ -134,4 +134,17 @@ describe("ProvisioningPanel — ready state", () => {
     renderPanel("tenant_creating");
     expect(screen.queryByText(/launching/i)).not.toBeInTheDocument();
   });
+
+  it("shows a clear label when test activation mode is active", () => {
+    const state = deriveProvisioningState("invite_validating");
+    render(
+      <ProvisioningPanel
+        state={state}
+        activationMode="test"
+        activationLabel="Test activation mode"
+      />
+    );
+
+    expect(screen.getByTestId("test-activation-badge")).toHaveTextContent("Test activation mode");
+  });
 });

@@ -10,10 +10,10 @@ import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 export function NextStepCard() {
   const { state } = useOnboardingState();
   const { confirmedTenant, confirmedEnvironment } = useTenantBinding();
-  const href = state.completed ? "/receipts" : getEntryRoute(state);
-  const label = state.completed ? "Review receipts" : "Continue setup";
+  const href = state.completed ? "/integrations" : getEntryRoute(state);
+  const label = state.completed ? "Connect an integration" : "Continue setup";
   const body = state.completed
-    ? "Your workspace is ready. Review sample receipts or move into guardrails and integrations next."
+    ? "Your workspace is ready. Connect your first runtime or service to start governing real AI actions."
     : getCurrentBlocker(state);
 
   return (
