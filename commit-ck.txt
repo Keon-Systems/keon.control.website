@@ -1,9 +1,0 @@
-feat(collective): add core collective dashboard — compliance, decisions, executions, policies, receipts, correlations, evidence
-
-Adds the foundational collective app layer:
-- App routes: compliance, correlation, decisions, evidence, executions, policies, receipts (list + detail views)
-- Collective layout, pulse-client dashboard, deferred-panel component
-- Sidebar navigation updated with collective section
-- governance-colors utility, collective/compliance contract types
-- governanceClient API extended
-- INTEGRATION_EXAMPLE.md updated
