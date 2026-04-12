@@ -59,9 +59,8 @@ export function IntegrationSelectionStep() {
         {/* BYO AI */}
         <button
           type="button"
-          role="button"
           aria-pressed={selected === "BYO_AI"}
-          aria-label="BYO AI"
+          aria-label="BYO AI — Govern the AI you already use"
           onClick={() => toggleCard("BYO_AI")}
           className={cn(
             "rounded-[24px] border p-7 text-left flex flex-col transition-all duration-200",
@@ -110,9 +109,8 @@ export function IntegrationSelectionStep() {
         {/* Collective */}
         <button
           type="button"
-          role="button"
           aria-pressed={selected === "COLLECTIVE"}
-          aria-label="Keon Collective"
+          aria-label="Keon Collective — Deliberation, not generation"
           onClick={() => toggleCard("COLLECTIVE")}
           className={cn(
             "rounded-[24px] border p-7 text-left flex flex-col transition-all duration-200",
