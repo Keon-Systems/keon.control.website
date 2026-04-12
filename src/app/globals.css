@@ -389,3 +389,22 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--ballistic-red);
 }
+
+@keyframes adv-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,211,94,0); }
+  45%  { box-shadow: 0 0 0 3px rgba(244,211,94,0.10); }
+  55%  { box-shadow: 0 0 5px 2px rgba(244,211,94,0.14); }
+}
+
+@keyframes seal-snap {
+  0%, 60% { box-shadow: 0 0 0 0 rgba(126,232,224,0); opacity: 0.4; }
+  72%  { box-shadow: 0 0 0 4px rgba(126,232,224,0.12); opacity: 1; transform: scale(1.02); }
+  80%  { box-shadow: 0 0 8px 2px rgba(126,232,224,0.16); opacity: 1; transform: scale(1); }
+  95%, 100% { box-shadow: 0 0 0 0 rgba(126,232,224,0); opacity: 0.8; }
+}
+
+@keyframes dot-snap {
+  0%, 65% { opacity: 0.3; transform: scale(0.7); }
+  73%  { opacity: 1; transform: scale(1.3); }
+  80%, 100% { opacity: 1; transform: scale(1); }
+}

@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   defaultOnboardingState,
+  type OnboardingEvent,
   type OnboardingGoal,
   type OnboardingState,
   type GuardrailPreset,
@@ -15,6 +16,7 @@ const STORAGE_KEY = "keon.onboarding.state";
 interface OnboardingStoreValue {
   hydrated: boolean;
   state: OnboardingState;
+  dispatch: (event: OnboardingEvent) => void;
   startSetup: () => void;
   saveGoals: (selectedGoals: OnboardingGoal[]) => void;
   confirmAccess: (workspaceId: string) => void;
@@ -26,6 +28,7 @@ interface OnboardingStoreValue {
 const OnboardingStoreContext = React.createContext<OnboardingStoreValue>({
   hydrated: false,
   state: defaultOnboardingState,
+  dispatch: () => undefined,
   startSetup: () => undefined,
   saveGoals: () => undefined,
   confirmAccess: () => undefined,
@@ -71,6 +74,7 @@ export function OnboardingStateProvider({ children }: { children: React.ReactNod
     () => ({
       hydrated,
       state,
+      dispatch,
       startSetup: () => dispatch({ type: "START_SETUP" }),
       saveGoals: (selectedGoals) => dispatch({ type: "SAVE_GOALS", payload: { selectedGoals } }),
       confirmAccess: (workspaceId) => dispatch({ type: "CONFIRM_ACCESS", payload: { workspaceId } }),
