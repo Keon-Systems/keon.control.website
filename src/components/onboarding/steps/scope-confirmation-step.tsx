@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 import { useOnboardingState } from "@/lib/onboarding/store";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 type ScopeViewState = "loading" | "recoverable_failure" | "ready_to_confirm" | "confirmed";
@@ -42,6 +43,7 @@ function LoadingPulse() {
 }
 
 export function ScopeConfirmationStep() {
+  const router = useRouter();
   const {
     tenants,
     isLoading,
@@ -52,6 +54,7 @@ export function ScopeConfirmationStep() {
     environment,
     setEnvironment,
     confirmBinding,
+    isTestMode,
   } = useTenantBinding();
   const { confirmAccess } = useOnboardingState();
   const [isConfirming, setIsConfirming] = React.useState(false);
@@ -87,10 +90,11 @@ export function ScopeConfirmationStep() {
     const timer = window.setTimeout(() => {
       confirmBinding();
       confirmAccess(selectedTenant.id);
+      router.replace("/setup?step=guardrails");
     }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [confirmAccess, confirmBinding, selectedTenant, viewState]);
+  }, [confirmAccess, confirmBinding, router, selectedTenant, viewState]);
 
   return (
     <StepShell
@@ -159,6 +163,14 @@ export function ScopeConfirmationStep() {
         </div>
       ) : (
         <div className="space-y-4">
+          {isTestMode && (
+            <div className="rounded-[24px] border border-[#F4D35E]/30 bg-[#F4D35E]/10 p-6">
+              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#F4D35E]">Test activation mode</div>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+                This internal test path is pinned to the Keon internal test workspace in sandbox. It does not represent a real invitation or tenant provisioning run.
+              </p>
+            </div>
+          )}
           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
             <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Environment</div>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
@@ -172,9 +184,11 @@ export function ScopeConfirmationStep() {
                     key={option}
                     type="button"
                     onClick={() => setEnvironment(option)}
+                    disabled={isTestMode && option !== "sandbox"}
                     className={cn(
                       "rounded-full px-4 py-2 font-mono text-xs uppercase tracking-[0.2em] transition",
-                      active ? "bg-white text-[#061117]" : "text-white/60 hover:text-white"
+                      active ? "bg-white text-[#061117]" : "text-white/60 hover:text-white",
+                      isTestMode && option !== "sandbox" && "cursor-not-allowed opacity-40 hover:text-white/60"
                     )}
                   >
                     {option}

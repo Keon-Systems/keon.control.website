@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useOnboardingState } from "@/lib/onboarding/store";
 import { cn } from "@/lib/utils";
 import type { GuardrailPreset } from "@/lib/onboarding/state-machine";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 const guardrailOptions: {
@@ -34,6 +35,7 @@ const guardrailOptions: {
 ];
 
 export function PolicyBaselineStep() {
+  const router = useRouter();
   const {
     state: { guardrailPreset },
     applyGuardrails,
@@ -46,7 +48,18 @@ export function PolicyBaselineStep() {
       title="Choose your starter guardrails"
       description="This is the default review posture for your workspace. You can refine it later, but choosing it now makes the product ready for first use."
       footer={
-        <Button size="lg" disabled={!selection} onClick={() => selection && applyGuardrails(selection)}>
+        <Button
+          size="lg"
+          disabled={!selection}
+          onClick={() => {
+            if (!selection) {
+              return;
+            }
+
+            applyGuardrails(selection);
+            router.replace("/setup?step=ready");
+          }}
+        >
           Review ready state
         </Button>
       }
