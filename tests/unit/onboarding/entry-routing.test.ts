@@ -1,19 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { getEntryRoute } from "@/lib/onboarding/experience";
-import { defaultOnboardingState } from "@/lib/onboarding/state-machine";
+import { defaultOnboardingState, type OnboardingState } from "@/lib/onboarding/state-machine";
 
 // Fully-complete onboarding state fixture
-const completedState = {
+const completedState: OnboardingState = {
   ...defaultOnboardingState,
   currentStep: "READY" as const,
   selectedGoals: ["govern-ai-actions"] as const,
   workspaceId: "tenant_abc",
+  integrationStepCompleted: true,
   guardrailPreset: "balanced" as const,
   completed: true,
 };
 
 // Mid-setup state fixture (goals done, access pending)
-const midSetupState = {
+// defaultOnboardingState already has integrationStepCompleted: false — spreading it is sufficient
+const midSetupState: OnboardingState = {
   ...defaultOnboardingState,
   currentStep: "CONFIRM_ACCESS" as const,
   selectedGoals: ["govern-ai-actions"] as const,
