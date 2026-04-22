@@ -90,7 +90,7 @@ export function ScopeConfirmationStep() {
     const timer = window.setTimeout(() => {
       confirmBinding();
       confirmAccess(selectedTenant.id);
-      router.replace("/setup?step=guardrails");
+      router.replace("/setup?step=integration");
     }, 450);
 
     return () => window.clearTimeout(timer);
