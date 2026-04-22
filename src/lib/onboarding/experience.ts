@@ -39,13 +39,6 @@ const REQUIRED_ITEMS: Omit<SetupChecklistItem, "status">[] = [
 const OPTIONAL_ITEMS: Omit<SetupChecklistItem, "status">[] = [
   {
     id: "ready",
-    title: "Connect your first integration",
-    description: "Route your runtime through Keon when you are ready to go live.",
-    href: "/integrations",
-    required: false,
-  },
-  {
-    id: "ready",
     title: "Review sample receipts",
     description: "See the evidence trail Keon records for reviewed actions.",
     href: "/receipts",
