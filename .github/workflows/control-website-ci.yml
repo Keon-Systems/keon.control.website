@@ -16,6 +16,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  hygiene:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Conflict Marker Guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan tracked files for unresolved git conflict markers
+        run: |
+          set -euo pipefail
+          pattern='^(<<<<<<<( |$)|=======$|>>>>>>>( |$))'
+          matches=$(git grep -nE "$pattern" -- ':!.github/workflows' || true)
+          if [ -n "$matches" ]; then
+            echo "::error::Unresolved git conflict markers found in tracked files. Resolve before merging."
+            echo "$matches"
+            exit 1
+          fi
+          echo "Clean — no conflict markers detected."
+
   ci:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
