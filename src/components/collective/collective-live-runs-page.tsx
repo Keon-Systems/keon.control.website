@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { readCollectiveLiveRunIndex } from "@/lib/collective/live-run";
-import type { CollectiveLiveRunIndexEntry } from "@/lib/contracts/collective-live";
 import { Badge, Button, Panel, PanelContent, PanelDescription, PanelHeader, PanelTitle } from "@/components/ui";
+import {
+    serverSnapshotCollectiveLiveRunIndex,
+    snapshotCollectiveLiveRunIndex,
+    subscribeCollectiveLiveRunIndex,
+} from "@/lib/collective/live-run";
+import Link from "next/link";
+import { useSyncExternalStore } from "react";
 
 export function CollectiveLiveRunsPage() {
-  const [runs, setRuns] = useState<CollectiveLiveRunIndexEntry[]>([]);
-
-  useEffect(() => {
-    setRuns(readCollectiveLiveRunIndex());
-  }, []);
+  const runs = useSyncExternalStore(
+    subscribeCollectiveLiveRunIndex,
+    snapshotCollectiveLiveRunIndex,
+    serverSnapshotCollectiveLiveRunIndex,
+  );
 
   return (
     <div className="space-y-4">
