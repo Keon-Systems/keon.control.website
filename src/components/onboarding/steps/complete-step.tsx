@@ -22,9 +22,11 @@ export function CompleteStep() {
   const router = useRouter();
   const { confirmedTenant, confirmedEnvironment } = useTenantBinding();
   const {
-    state: { selectedGoals, guardrailPreset },
+    state: { selectedGoals, guardrailPreset, selectedIntegrationMode },
     finishOnboarding,
   } = useOnboardingState();
+
+  const isCollective = selectedIntegrationMode === "COLLECTIVE";
 
   return (
     <StepShell
@@ -41,9 +43,6 @@ export function CompleteStep() {
             }}
           >
             Open workspace overview
-          </Button>
-          <Button size="lg" variant="secondary" onClick={() => router.push("/integrations")}>
-            Connect an integration later
           </Button>
         </div>
       }
@@ -85,7 +84,9 @@ export function CompleteStep() {
         <div className="rounded-[24px] border border-white/10 bg-black/20 p-6">
           <div className="font-mono text-xs uppercase tracking-[0.22em] text-white/60">Optional later</div>
           <p className="mt-3 text-sm leading-7 text-white/72">
-            Connect integrations, inspect sample receipts, and set up collaborative review when your team is ready.
+            {isCollective
+              ? "Inspect sealed receipts and bring additional reviewers into high-stakes decisions when your team is ready."
+              : "Route execution through the MCP Gateway, inspect sealed receipts, and bring reviewers into high-stakes decisions when your team is ready."}
           </p>
         </div>
       </div>

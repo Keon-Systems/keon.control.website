@@ -1,8 +1,8 @@
+import { ScopeConfirmationStep } from "@/components/onboarding/steps/scope-confirmation-step";
+import type { Tenant } from "@/lib/api/types";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ScopeConfirmationStep } from "@/components/onboarding/steps/scope-confirmation-step";
-import type { Tenant } from "@/lib/api/types";
 
 const mockUseTenantBinding = vi.fn();
 const mockUseOnboardingState = vi.fn();
@@ -124,7 +124,7 @@ describe("ScopeConfirmationStep", () => {
     await waitFor(() => {
       expect(confirmBinding).toHaveBeenCalledTimes(1);
       expect(confirmAccess).toHaveBeenCalledWith(tenant.id);
-      expect(mockReplace).toHaveBeenCalledWith("/setup?step=guardrails");
+      expect(mockReplace).toHaveBeenCalledWith("/setup?step=integration");
     }, { timeout: 1500 });
   });
 
