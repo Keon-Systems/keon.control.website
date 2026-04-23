@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { lookupCollectiveLiveRun, mapCollectiveLiveError } from "@/lib/server/collective-live";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,9 @@ export async function GET(
     const correlationId = url.searchParams.get("correlationId") ?? undefined;
     const result = await lookupCollectiveLiveRun(decodeURIComponent(intentId), correlationId);
 
+    const unavailable = "status" in result && result.status === "NOT_YET_AVAILABLE";
     return NextResponse.json(result, {
-      status: result.status === "NOT_YET_AVAILABLE" ? 202 : 200,
+      status: unavailable ? 202 : 200,
     });
   } catch (error) {
     const mapped = mapCollectiveLiveError(error);

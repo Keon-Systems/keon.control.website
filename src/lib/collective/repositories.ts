@@ -45,6 +45,33 @@ import type {
   DelegatedAuthorityGrantDetail,
   DelegatedAuthorityGrantListItem,
   DelegatedAuthorityLineageNode,
+  ExecutionEligibilityReason,
+  ExecutionEligibilityReasonCode,
+  ExecutionEligibilityView,
+  PreparedEffectLineageNode,
+  PreparedEffectRequestDetail,
+  PreparedEffectRequestListItem,
+  ReformAdoptionDecisionDetail,
+  ReformAdoptionDecisionListItem,
+  ReformAdoptionFilterState,
+} from "./dto";
+import {
+  buildMockAgentPermissionListResponse,
+  buildMockAuthorityActivationListResponse,
+  buildMockDelegatedAuthorityListResponse,
+  buildMockPreparedEffectListResponse,
+  buildMockReformAdoptionListResponse,
+  getMockAgentPermissionDetailResponse,
+  getMockAgentPermissionLineageResponse,
+  getMockAuthorityActivationDetailResponse,
+  getMockAuthorityActivationHistoryResponse,
+  getMockAuthorityActivationLineageResponse,
+  getMockDelegatedAuthorityDetailResponse,
+  getMockDelegatedAuthorityLineageResponse,
+  getMockPreparedEffectDetailResponse,
+  getMockPreparedEffectLineageResponse,
+  getMockReformAdoptionDetailResponse,
+} from "./mocks";
 import { presentExecutionEligibilityStatus } from "./normalization";
 import { collectiveObservabilityRoutes } from "./routes";
 
@@ -326,6 +353,200 @@ export interface PreparedEffectRepository {
   lineage(preparedRequestId: string): Promise<PreparedEffectLineageNode>;
 }
 
+export interface ExecutionEligibilityRepository {
+  evaluate(preparedEffectId: string): Promise<ExecutionEligibilityView>;
+}
+
+type ScopeShape = {
+  readonly tenantId?: string | null;
+  readonly domainScope?: string | null;
+  readonly policyScope?: string | null;
+  readonly authorityClass?: string | null;
+  readonly effectClass?: string | null;
+  readonly actionCategories?: readonly string[];
+  readonly capabilityCategories?: readonly string[];
+  readonly targetClass?: string | null;
+};
+
+type ExecutionEligibilityDependencies = {
+  readonly preparedEffects: Pick<PreparedEffectRepository, "detail">;
+  readonly activations: Pick<AuthorityActivationRepository, "detail">;
+  readonly permissions: Pick<AgentPermissionRepository, "detail">;
+  readonly delegations: Pick<DelegatedAuthorityRepository, "detail">;
+  readonly clock?: () => Date;
+};
+
+function isScopeSubset(child: string | null | undefined, parent: string | null | undefined): boolean {
+  if (!child) return true;
+  if (!parent) return false;
+  return child === parent || child.startsWith(`${parent}.`);
+}
+
+function includesAll(parent: readonly string[] | undefined, child: readonly string[] | undefined): boolean {
+  if (!child || child.length === 0) return true;
+  if (!parent) return false;
+  const values = new Set(parent);
+  return child.every((value) => values.has(value));
+}
+
+function matchesScalar(child: string | null | undefined, parent: string | null | undefined): boolean {
+  if (!child) return true;
+  if (!parent) return false;
+  return child === parent;
+}
+
+function normalizeScope(scope: ScopeShape): ScopeShape {
+  return {
+    tenantId: scope.tenantId ?? null,
+    domainScope: scope.domainScope ?? null,
+    policyScope: scope.policyScope ?? null,
+    authorityClass: scope.authorityClass ?? null,
+    effectClass: scope.effectClass ?? null,
+    actionCategories: scope.actionCategories ?? [],
+    capabilityCategories: scope.capabilityCategories ?? [],
+    targetClass: scope.targetClass ?? null,
+  };
+}
+
+function isScopeAligned(child: ScopeShape, parent: ScopeShape): boolean {
+  const normalizedChild = normalizeScope(child);
+  const normalizedParent = normalizeScope(parent);
+
+  return matchesScalar(normalizedChild.tenantId, normalizedParent.tenantId)
+    && isScopeSubset(normalizedChild.domainScope, normalizedParent.domainScope)
+    && isScopeSubset(normalizedChild.policyScope, normalizedParent.policyScope)
+    && matchesScalar(normalizedChild.authorityClass, normalizedParent.authorityClass)
+    && matchesScalar(normalizedChild.effectClass, normalizedParent.effectClass)
+    && includesAll(normalizedParent.actionCategories, normalizedChild.actionCategories)
+    && includesAll(normalizedParent.capabilityCategories, normalizedChild.capabilityCategories)
+    && isScopeSubset(normalizedChild.targetClass, normalizedParent.targetClass);
+}
+
+function isPermissionLifecycleValid(permission: AgentPermissionGrantDetail, nowUtc: number): boolean {
+  return permission.lifecycleState === "Active" && Date.parse(permission.expiresAtUtc) > nowUtc;
+}
+
+function isDelegationLifecycleValid(delegation: DelegatedAuthorityGrantDetail, nowUtc: number): boolean {
+  return delegation.lifecycleState === "Active" && Date.parse(delegation.expiresAtUtc) > nowUtc;
+}
+
+function isActivationActive(activation: AuthorityActivationDetail, nowUtc: number): boolean {
+  return activation.lifecycleState === "Eligible"
+    && activation.constitutionalMode === "active"
+    && Date.parse(activation.expiresAtUtc) > nowUtc;
+}
+
+function isPreparedEffectReady(preparedEffect: PreparedEffectRequestDetail, nowUtc: number): boolean {
+  return preparedEffect.lifecycleState === "Materialized" && Date.parse(preparedEffect.expiresAtUtc) > nowUtc;
+}
+
+function reason(code: ExecutionEligibilityReasonCode, message: string): ExecutionEligibilityReason {
+  return { code, message };
+}
+
+const HARD_EXECUTION_ELIGIBILITY_FAILURES = new Set<ExecutionEligibilityReasonCode>([
+  "scope_mismatch",
+  "upstream_revoked",
+  "delegation_invalid",
+]);
+
+function resolveExecutionEligibilityTone(
+  status: ExecutionEligibilityView["status"],
+  reasons: readonly ExecutionEligibilityReason[],
+): ExecutionEligibilityView["statusPresentation"]["tone"] {
+  if (status === "eligible") {
+    return "success";
+  }
+
+  return reasons.some((entry) => HARD_EXECUTION_ELIGIBILITY_FAILURES.has(entry.code))
+    ? "danger"
+    : "warning";
+}
+
+export function createReformAdoptionRepository(provider: ReformAdoptionProvider = createMockReformAdoptionProvider()): ReformAdoptionRepository {
+  return {
+    async list(filters = {}) {
+      const payload = await provider.list(filters);
+      return payload.items.map(adaptReformAdoptionDecisionListItem);
+    },
+    async detail(decisionId) {
+      const payload = await provider.detail(decisionId);
+      return adaptReformAdoptionDecisionDetail(payload.decision, payload.mutationReceiptGroups);
+    },
+  };
+}
+
+export function createDelegatedAuthorityRepository(provider: DelegatedAuthorityProvider = createMockDelegatedAuthorityProvider()): DelegatedAuthorityRepository {
+  return {
+    async list(filters = {}) {
+      const payload = await provider.list(filters);
+      return payload.items.map(adaptDelegatedAuthorityGrantListItem);
+    },
+    async detail(grantId) {
+      const payload = await provider.detail(grantId);
+      return adaptDelegatedAuthorityGrantDetail(payload.grant);
+    },
+    async lineage(grantId) {
+      const payload = await provider.lineage(grantId);
+      return adaptDelegatedAuthorityLineage(payload.lineage);
+    },
+  };
+}
+
+export function createAgentPermissionRepository(provider: AgentPermissionProvider = createMockAgentPermissionProvider()): AgentPermissionRepository {
+  return {
+    async list(filters = {}) {
+      const payload = await provider.list(filters);
+      return payload.items.map(adaptAgentPermissionGrantListItem);
+    },
+    async detail(grantId) {
+      const payload = await provider.detail(grantId);
+      return adaptAgentPermissionGrantDetail(payload.grant);
+    },
+    async lineage(grantId) {
+      const payload = await provider.lineage(grantId);
+      return adaptAgentPermissionLineage(payload.lineage);
+    },
+  };
+}
+
+export function createAuthorityActivationRepository(provider: AuthorityActivationProvider = createMockAuthorityActivationProvider()): AuthorityActivationRepository {
+  return {
+    async list(filters = {}) {
+      const payload = await provider.list(filters);
+      return payload.items.map(adaptAuthorityActivationListItem);
+    },
+    async detail(activationId) {
+      const payload = await provider.detail(activationId);
+      return adaptAuthorityActivationDetail(payload.activation);
+    },
+    async history(activationId) {
+      const payload = await provider.history(activationId);
+      return adaptAuthorityActivationHistory(payload.history);
+    },
+    async lineage(activationId) {
+      const payload = await provider.lineage(activationId);
+      return adaptAuthorityActivationLineage(payload.lineage);
+    },
+  };
+}
+
+export function createPreparedEffectRepository(provider: PreparedEffectProvider = createMockPreparedEffectProvider()): PreparedEffectRepository {
+  return {
+    async list(filters = {}) {
+      const payload = await provider.list(filters);
+      return payload.items.map(adaptPreparedEffectListItem);
+    },
+    async detail(preparedRequestId) {
+      const payload = await provider.detail(preparedRequestId);
+      return adaptPreparedEffectDetail(payload.preparedEffect);
+    },
+    async lineage(preparedRequestId) {
+      const payload = await provider.lineage(preparedRequestId);
+      return adaptPreparedEffectLineage(payload.lineage);
+    },
+  };
+}
 
 export function createExecutionEligibilityRepository(
   dependencies: Partial<ExecutionEligibilityDependencies> = {},

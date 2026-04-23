@@ -1,8 +1,8 @@
 import type {
-  CollectiveLiveBranch,
-  CollectiveLiveRun,
-  CollectiveLiveRunIndexEntry,
-  CollectiveLiveTraceStep,
+    CollectiveLiveBranch,
+    CollectiveLiveRun,
+    CollectiveLiveRunIndexEntry,
+    CollectiveLiveTraceStep,
 } from "@/lib/contracts/collective-live";
 
 const GOVERNANCE_STEP_KEYWORDS = ["authorize", "approval", "policy", "governance"];
@@ -105,6 +105,57 @@ export function readCollectiveLiveRun(intentId: string): CollectiveLiveRun | nul
     localStorage.removeItem(collectiveLiveRunStorageKey(intentId));
     return null;
   }
+}
+
+const EMPTY_LIVE_RUN_INDEX: readonly CollectiveLiveRunIndexEntry[] = Object.freeze([]);
+let liveRunIndexSnapshotRaw: string | null | undefined;
+let liveRunIndexSnapshotValue: readonly CollectiveLiveRunIndexEntry[] = EMPTY_LIVE_RUN_INDEX;
+const liveRunSnapshotByIntent = new Map<string, { raw: string | null; value: CollectiveLiveRun | null }>();
+
+function subscribeCollectiveLiveStore(onChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+  window.addEventListener("storage", onChange);
+  return () => window.removeEventListener("storage", onChange);
+}
+
+export const subscribeCollectiveLiveRunIndex = subscribeCollectiveLiveStore;
+export const subscribeCollectiveLiveRun = subscribeCollectiveLiveStore;
+
+export function snapshotCollectiveLiveRunIndex(): readonly CollectiveLiveRunIndexEntry[] {
+  if (typeof window === "undefined") {
+    return EMPTY_LIVE_RUN_INDEX;
+  }
+  const raw = localStorage.getItem(collectiveLiveRunIndexStorageKey());
+  if (raw === liveRunIndexSnapshotRaw) {
+    return liveRunIndexSnapshotValue;
+  }
+  liveRunIndexSnapshotRaw = raw;
+  liveRunIndexSnapshotValue = raw ? Object.freeze(readCollectiveLiveRunIndex()) : EMPTY_LIVE_RUN_INDEX;
+  return liveRunIndexSnapshotValue;
+}
+
+export function serverSnapshotCollectiveLiveRunIndex(): readonly CollectiveLiveRunIndexEntry[] {
+  return EMPTY_LIVE_RUN_INDEX;
+}
+
+export function snapshotCollectiveLiveRun(intentId: string): CollectiveLiveRun | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const raw = localStorage.getItem(collectiveLiveRunStorageKey(intentId));
+  const cached = liveRunSnapshotByIntent.get(intentId);
+  if (cached && cached.raw === raw) {
+    return cached.value;
+  }
+  const value = readCollectiveLiveRun(intentId);
+  liveRunSnapshotByIntent.set(intentId, { raw, value });
+  return value;
+}
+
+export function serverSnapshotCollectiveLiveRun(): CollectiveLiveRun | null {
+  return null;
 }
 
 export function collectiveLiveRunPhase(run: CollectiveLiveRun) {

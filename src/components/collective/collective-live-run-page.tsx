@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { persistCollectiveLiveRun, readCollectiveLiveRun, readCollectiveLiveRunIndex } from "@/lib/collective/live-run";
-import type { CollectiveLiveRun, CollectiveLiveRunLookupUnavailable } from "@/lib/contracts/collective-live";
 import { Badge, Button, Panel, PanelContent, PanelDescription, PanelHeader, PanelTitle } from "@/components/ui";
+import {
+    persistCollectiveLiveRun,
+    readCollectiveLiveRunIndex,
+    serverSnapshotCollectiveLiveRun,
+    snapshotCollectiveLiveRun,
+    subscribeCollectiveLiveRun,
+} from "@/lib/collective/live-run";
+import type { CollectiveLiveRun, CollectiveLiveRunLookupUnavailable } from "@/lib/contracts/collective-live";
+import Link from "next/link";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CollectiveLiveRunView } from "./collective-live-run-view";
 
 interface CollectiveLiveRunPageProps {
@@ -12,18 +18,21 @@ interface CollectiveLiveRunPageProps {
 }
 
 export function CollectiveLiveRunPage({ intentId }: CollectiveLiveRunPageProps) {
-  const [run, setRun] = useState<CollectiveLiveRun | null>(null);
+  const cachedRun = useSyncExternalStore(
+    subscribeCollectiveLiveRun,
+    () => snapshotCollectiveLiveRun(intentId),
+    serverSnapshotCollectiveLiveRun,
+  );
+  const [fetchedRun, setFetchedRun] = useState<CollectiveLiveRun | null>(null);
   const [lookupUnavailable, setLookupUnavailable] = useState<CollectiveLiveRunLookupUnavailable | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    const cachedRun = readCollectiveLiveRun(intentId);
-    if (cachedRun) {
-      setRun(cachedRun);
-    }
+  const run = fetchedRun ?? cachedRun;
 
+  useEffect(() => {
+    const initialCachedRun = snapshotCollectiveLiveRun(intentId);
     const indexEntry = readCollectiveLiveRunIndex().find((entry) => entry.intentId === intentId);
-    const correlationId = cachedRun?.run.correlationId ?? indexEntry?.correlationId;
+    const correlationId = initialCachedRun?.run.correlationId ?? indexEntry?.correlationId;
 
     void fetch(
       `/api/collective/live-runs/${encodeURIComponent(intentId)}${correlationId ? `?correlationId=${encodeURIComponent(correlationId)}` : ""}`,
@@ -37,7 +46,7 @@ export function CollectiveLiveRunPage({ intentId }: CollectiveLiveRunPageProps) 
         }
 
         persistCollectiveLiveRun(payload as CollectiveLiveRun);
-        setRun(payload as CollectiveLiveRun);
+        setFetchedRun(payload as CollectiveLiveRun);
       })
       .catch(() => {
         if (indexEntry) {

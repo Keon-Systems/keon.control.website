@@ -1,18 +1,19 @@
-import { render, screen } from "@testing-library/react";
 import { CollectiveLiveRunView } from "@/components/collective/collective-live-run-view";
 import {
-  classifyCollectivePlane,
-  collectiveLiveRunPhase,
-  collectiveLiveStageStates,
-  persistCollectiveLiveRun,
-  readCollectiveLiveRun,
-  readCollectiveLiveRunIndex,
+    classifyCollectivePlane,
+    collectiveLiveRunPhase,
+    collectiveLiveStageStates,
+    persistCollectiveLiveRun,
+    readCollectiveLiveRun,
+    readCollectiveLiveRunIndex,
 } from "@/lib/collective/live-run";
-import { lookupCollectiveLiveRun, mapCollectiveLiveError, submitCollectiveLiveRun } from "@/lib/server/collective-live";
 import type { CollectiveLiveRun } from "@/lib/contracts/collective-live";
+import { lookupCollectiveLiveRun, mapCollectiveLiveError, submitCollectiveLiveRun } from "@/lib/server/collective-live";
+import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: unknown }) => (
+  default: ({ href, children }: { href: string; children: ReactNode }) => (
     <a href={href}>{children}</a>
   ),
 }));
