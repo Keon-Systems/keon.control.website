@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveFirstRunStatus, getFirstRunStageForRoute } from "@/lib/first-run/state";
+import { canAccessFirstRunStage, deriveFirstRunStatus, getFirstRunStageForRoute } from "@/lib/first-run/state";
 import { defaultOnboardingState } from "@/lib/onboarding/state-machine";
 
 describe("first-run state", () => {
@@ -80,5 +80,35 @@ describe("first-run state", () => {
     expect(getFirstRunStageForRoute("/setup")).toBe("setup");
     expect(getFirstRunStageForRoute("/onboarding")).toBe("setup");
     expect(getFirstRunStageForRoute("/cockpit")).toBe("app");
+  });
+
+  it("blocks WELCOME-stage users from entering the setup route", () => {
+    expect(
+      canAccessFirstRunStage("setup", { provisioningComplete: true, stage: "welcome" })
+    ).toBe(false);
+  });
+
+  it("allows setup-stage users to access the setup route", () => {
+    expect(
+      canAccessFirstRunStage("setup", { provisioningComplete: true, stage: "setup" })
+    ).toBe(true);
+  });
+
+  it("allows app-stage users to revisit the setup route", () => {
+    expect(
+      canAccessFirstRunStage("setup", { provisioningComplete: true, stage: "app" })
+    ).toBe(true);
+  });
+
+  it("allows activate-stage users to access the activate route", () => {
+    expect(
+      canAccessFirstRunStage("activate", { provisioningComplete: false, stage: "activate" })
+    ).toBe(true);
+  });
+
+  it("blocks setup-stage users from the activate route", () => {
+    expect(
+      canAccessFirstRunStage("activate", { provisioningComplete: true, stage: "setup" })
+    ).toBe(false);
   });
 });

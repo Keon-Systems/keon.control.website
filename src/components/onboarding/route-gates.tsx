@@ -1,6 +1,6 @@
 "use client";
 
-import { getFirstRunStageForRoute, useFirstRunState, type FirstRunStage } from "@/lib/first-run/state";
+import { canAccessFirstRunStage, getFirstRunStageForRoute, useFirstRunState, type FirstRunStage } from "@/lib/first-run/state";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -20,7 +20,7 @@ function useStageRedirect(expectedStage: FirstRunStage) {
   const pathname = usePathname();
   const firstRun = useFirstRunState();
   const routeStage = getFirstRunStageForRoute(pathname);
-  const isOnExpectedStage = routeStage === expectedStage && firstRun.stage === expectedStage;
+  const isOnExpectedStage = routeStage === expectedStage && canAccessFirstRunStage(expectedStage, firstRun);
 
   React.useEffect(() => {
     if (!firstRun.hydrated || isOnExpectedStage) {
