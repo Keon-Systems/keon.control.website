@@ -17,6 +17,18 @@ export interface FirstRunStatus {
   stage: FirstRunStage;
 }
 
+export function canAccessFirstRunStage(
+  expectedStage: FirstRunStage,
+  status: Pick<FirstRunStatus, "provisioningComplete" | "stage">
+) {
+  if (expectedStage === "setup") {
+    // WELCOME-stage users belong at /welcome, not /setup.
+    // Completed (app-stage) users may revisit setup.
+    return status.provisioningComplete && status.stage !== "welcome";
+  }
+  return status.stage === expectedStage;
+}
+
 interface FirstRunContextValue extends FirstRunStatus {
   hydrated: boolean;
   markProvisioningComplete: () => void;
