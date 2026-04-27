@@ -99,4 +99,16 @@ describe("first-run state", () => {
       canAccessFirstRunStage("setup", { provisioningComplete: true, stage: "app" })
     ).toBe(true);
   });
+
+  it("allows activate-stage users to access the activate route", () => {
+    expect(
+      canAccessFirstRunStage("activate", { provisioningComplete: false, stage: "activate" })
+    ).toBe(true);
+  });
+
+  it("blocks setup-stage users from the activate route", () => {
+    expect(
+      canAccessFirstRunStage("activate", { provisioningComplete: true, stage: "setup" })
+    ).toBe(false);
+  });
 });
