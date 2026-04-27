@@ -8,20 +8,23 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-const goalOptions: { id: OnboardingGoal; title: string; description: string }[] = [
+const goalOptions: { id: OnboardingGoal; title: string; subtitle: string; description: string }[] = [
   {
     id: "govern-ai-actions",
-    title: "Governance Runtime",
+    title: "Govern AI actions",
+    subtitle: "Governance Runtime",
     description: "Every AI action is intercepted and evaluated against policy before it executes. Decisions are cryptographically signed — permitted, denied, or deferred — with a receipt that cannot be altered.",
   },
   {
     id: "memory-and-context",
-    title: "Cortex",
+    title: "Add reliable memory",
+    subtitle: "Cortex",
     description: "Deterministic memory — not a vector index. Every shard has a canonical identity, idempotent ingestion, and fail-closed tenant isolation. AI systems recall accurately. Context never leaks.",
   },
   {
     id: "oversight-and-collaboration",
-    title: "Collective",
+    title: "Review high-risk decisions together",
+    subtitle: "Collective",
     description: "Temporal branching for group cognition. Proposals diverge, face adversarial challenge, vote, and collapse into governed decisions — producing outcomes no single contributor could reach alone.",
   },
 ];
@@ -40,7 +43,7 @@ export function IntentSelectionStep() {
 
   return (
     <StepShell
-      eyebrow="Step 1"
+      eyebrow="Step 1 of 4"
       title="What do you want to use Keon for first?"
       description="Choose the outcomes that matter most right now. Keon uses this to keep the rest of setup focused on your actual first use case."
       footer={
@@ -74,6 +77,7 @@ export function IntentSelectionStep() {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="font-display text-2xl font-semibold text-white">{option.title}</div>
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">{option.subtitle}</div>
                 <div
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border font-mono text-xs uppercase",

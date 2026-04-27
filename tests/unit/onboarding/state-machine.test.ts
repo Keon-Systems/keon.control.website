@@ -85,11 +85,41 @@ describe("SELECT_INTEGRATION step", () => {
     expect(afterAccess.currentStep).toBe("SELECT_INTEGRATION");
   });
 
-  it("ADVANCE_INTEGRATION without a mode transitions to SET_GUARDRAILS", () => {
+  it("ADVANCE_INTEGRATION without a mode is rejected — mode is now required", () => {
     const next = transitionOnboardingState(afterAccess, { type: "ADVANCE_INTEGRATION" });
-    expect(next.currentStep).toBe("SET_GUARDRAILS");
-    expect(next.integrationStepCompleted).toBe(true);
-    expect(next.selectedIntegrationMode).toBeUndefined();
+    expect(next.currentStep).toBe("SELECT_INTEGRATION"); // no change
+    expect(next.integrationStepCompleted).toBe(false);   // no change
+  });
+
+  it("rejects ADVANCE_INTEGRATION when no integration mode is selected", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "SELECT_INTEGRATION",
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+      integrationStepCompleted: false,
+      selectedIntegrationMode: undefined,
+    };
+    const result = transitionOnboardingState(state, { type: "ADVANCE_INTEGRATION" });
+    expect(result).toEqual(state);
+  });
+
+  it("accepts ADVANCE_INTEGRATION when a mode is provided", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "SELECT_INTEGRATION",
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+      integrationStepCompleted: false,
+      selectedIntegrationMode: undefined,
+    };
+    const result = transitionOnboardingState(state, {
+      type: "ADVANCE_INTEGRATION",
+      payload: { selectedMode: "BYO_AI" },
+    });
+    expect(result.currentStep).toBe("SET_GUARDRAILS");
+    expect(result.integrationStepCompleted).toBe(true);
+    expect(result.selectedIntegrationMode).toBe("BYO_AI");
   });
 
   it("ADVANCE_INTEGRATION with BYO_AI captures mode", () => {

@@ -44,7 +44,7 @@ export function PolicyBaselineStep() {
 
   return (
     <StepShell
-      eyebrow="Step 3"
+      eyebrow="Step 4 of 4"
       title="Choose your starter guardrails"
       description="This is the default review posture for your workspace. You can refine it later, but choosing it now makes the product ready for first use."
       footer={

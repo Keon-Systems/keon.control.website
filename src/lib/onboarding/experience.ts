@@ -28,6 +28,13 @@ const REQUIRED_ITEMS: Omit<SetupChecklistItem, "status">[] = [
     required: true,
   },
   {
+    id: "integration",
+    title: "Choose operating model",
+    description: "Choose how Keon evaluates and governs decisions.",
+    href: "/setup?step=integration",
+    required: true,
+  },
+  {
     id: "guardrails",
     title: "Set starter guardrails",
     description: "Choose the starting review and approval posture for AI-driven actions.",
@@ -77,7 +84,7 @@ export const stepLabels: Record<OnboardingStep, string> = {
   CONFIRM_ACCESS: "Confirm workspace access",
   SELECT_INTEGRATION: "Choose operating model",
   SET_GUARDRAILS: "Set starter guardrails",
-  READY: "Ready to use",
+  READY: "Basic setup complete",
 };
 
 export function getNextRequiredStep(state: OnboardingState): OnboardingStep {
@@ -101,16 +108,21 @@ export function getNextRequiredStep(state: OnboardingState): OnboardingStep {
 }
 
 export function getRequiredCompletionCount(state: OnboardingState) {
-  return [state.selectedGoals.length > 0, !!state.workspaceId, !!state.guardrailPreset].filter(Boolean).length;
+  return [
+    state.selectedGoals.length > 0,
+    !!state.workspaceId,
+    state.integrationStepCompleted,
+    !!state.guardrailPreset,
+  ].filter(Boolean).length;
 }
 
 export function getReadinessLabel(state: OnboardingState) {
   if (state.completed) {
-    return "Ready to use";
+    return "Basic setup complete";
   }
 
   const completed = getRequiredCompletionCount(state);
-  return `${completed}/3 required steps complete`;
+  return `${completed}/4 required steps complete`;
 }
 
 export function getCurrentBlocker(state: OnboardingState) {
@@ -171,6 +183,7 @@ export function getChecklistItems(state: OnboardingState) {
     const isComplete =
       (step === "DEFINE_GOALS" && state.selectedGoals.length > 0) ||
       (step === "CONFIRM_ACCESS" && !!state.workspaceId) ||
+      (step === "SELECT_INTEGRATION" && state.integrationStepCompleted) ||
       (step === "SET_GUARDRAILS" && !!state.guardrailPreset);
 
     const status: ChecklistStatus = isComplete ? "complete" : step === nextStep ? "current" : "upcoming";

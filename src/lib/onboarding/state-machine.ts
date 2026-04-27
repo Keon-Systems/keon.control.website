@@ -137,10 +137,14 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
       if (!state.workspaceId || state.currentStep !== "SELECT_INTEGRATION") {
         return state;
       }
+      const mode = event.payload?.selectedMode ?? state.selectedIntegrationMode;
+      if (!mode) {
+        return state;
+      }
       return {
         ...state,
         integrationStepCompleted: true,
-        selectedIntegrationMode: event.payload?.selectedMode ?? state.selectedIntegrationMode,
+        selectedIntegrationMode: mode,
         currentStep: "SET_GUARDRAILS",
       };
     }

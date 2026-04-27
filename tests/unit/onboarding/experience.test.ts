@@ -38,7 +38,7 @@ describe("SELECT_INTEGRATION routing", () => {
     expect(clampVisibleStep("guardrails", afterAccess)).toBe("SELECT_INTEGRATION");
   });
 
-  it("checklist completion count stays at 3 required items", () => {
+  it("checklist has 4 required items", () => {
     const complete: OnboardingState = {
       ...defaultOnboardingState,
       currentStep: "READY",
@@ -48,14 +48,14 @@ describe("SELECT_INTEGRATION routing", () => {
       guardrailPreset: "balanced",
     };
     const { required } = getChecklistItems(complete);
-    expect(required).toHaveLength(3);
+    expect(required).toHaveLength(4);
     expect(required.every((item) => item.status === "complete")).toBe(true);
   });
 });
 
 describe("onboarding experience helpers", () => {
   it("reports in-progress readiness clearly", () => {
-    expect(getReadinessLabel(defaultOnboardingState)).toBe("0/3 required steps complete");
+    expect(getReadinessLabel(defaultOnboardingState)).toBe("0/4 required steps complete");
     expect(getCurrentBlocker(defaultOnboardingState)).toMatch(/choose what you want keon to manage first/i);
   });
 
@@ -65,11 +65,12 @@ describe("onboarding experience helpers", () => {
       currentStep: "READY" as const,
       selectedGoals: ["govern-ai-actions"] as const,
       workspaceId: "tenant_123",
+      integrationStepCompleted: true,
       guardrailPreset: "balanced" as const,
     };
 
     const checklist = getChecklistItems(state);
     expect(checklist.required.every((item) => item.status === "complete")).toBe(true);
-    expect(getReadinessLabel({ ...state, completed: true })).toBe("Ready to use");
+    expect(getReadinessLabel({ ...state, completed: true })).toBe("Basic setup complete");
   });
 });

@@ -98,7 +98,7 @@ export function ScopeConfirmationStep() {
 
   return (
     <StepShell
-      eyebrow="Step 2"
+      eyebrow="Step 2 of 4"
       title="Confirm your workspace access"
       description="Choose the workspace and environment Keon should prepare. This determines where guardrails, receipts, and later integrations will apply."
       footer={

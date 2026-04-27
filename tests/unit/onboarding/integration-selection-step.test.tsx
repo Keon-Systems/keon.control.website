@@ -41,10 +41,10 @@ describe("IntegrationSelectionStep", () => {
     expect(screen.getByText("Keon Collective")).toBeInTheDocument();
   });
 
-  it("renders the continue button enabled with no selection", () => {
+  it("disables the continue button until a mode is selected", () => {
     render(<IntegrationSelectionStep />);
     const btn = screen.getByRole("button", { name: /continue/i });
-    expect(btn).not.toBeDisabled();
+    expect(btn).toBeDisabled();
   });
 
   it("clicking BYO AI card marks it as selected (aria-pressed)", () => {
@@ -62,8 +62,9 @@ describe("IntegrationSelectionStep", () => {
     expect(byoCard).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("clicking Continue dispatches ADVANCE_INTEGRATION", () => {
+  it("clicking Continue dispatches ADVANCE_INTEGRATION after selecting a mode", () => {
     render(<IntegrationSelectionStep />);
+    fireEvent.click(screen.getByRole("button", { name: /byo ai/i }));
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "ADVANCE_INTEGRATION" })
@@ -85,8 +86,14 @@ describe("IntegrationSelectionStep", () => {
     expect(screen.getByText(/watch a decision unfold/i)).toBeInTheDocument();
   });
 
-  it("renders the footer reassurance hint", () => {
+  it("renders the select-a-mode hint when nothing is selected", () => {
     render(<IntegrationSelectionStep />);
+    expect(screen.getByText(/select an operating model to continue/i)).toBeInTheDocument();
+  });
+
+  it("renders the reassurance hint after selecting BYO AI", () => {
+    render(<IntegrationSelectionStep />);
+    fireEvent.click(screen.getByRole("button", { name: /byo ai/i }));
     expect(screen.getByText(/start with byo ai and upgrade later/i)).toBeInTheDocument();
   });
 });

@@ -28,13 +28,13 @@ export function OnboardingLayout({ children }: { children: React.ReactNode }) {
             <div className="hidden min-w-[280px] flex-1 items-center justify-center lg:flex">
               <div className="w-full max-w-md space-y-2">
                 <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.22em] text-white/70">
-                  <span>{completedRequired} of 3 required steps complete</span>
+                  <span>{completedRequired} of 4 required steps complete</span>
                   <span>{stepLabels[currentStep]}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
                   <div
                     className="h-full rounded-full bg-[linear-gradient(90deg,#7EE8E0_0%,#B6F09C_100%)] transition-all duration-500"
-                    style={{ width: `${(completedRequired / 3) * 100}%` }}
+                    style={{ width: `${(completedRequired / 4) * 100}%` }}
                   />
                 </div>
               </div>

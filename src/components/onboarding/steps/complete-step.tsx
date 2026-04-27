@@ -22,29 +22,25 @@ export function CompleteStep() {
   const router = useRouter();
   const { confirmedTenant, confirmedEnvironment } = useTenantBinding();
   const {
-    state: { selectedGoals, guardrailPreset, selectedIntegrationMode },
+    state: { selectedGoals, guardrailPreset },
     finishOnboarding,
   } = useOnboardingState();
 
-  const isCollective = selectedIntegrationMode === "COLLECTIVE";
-
   return (
     <StepShell
-      eyebrow="Ready to use"
-      title="Your workspace is ready."
-      description="Keon Control now knows what you want to protect, which workspace to prepare, and which starter guardrails to apply. You can start using the workspace overview now and return later for optional setup."
+      eyebrow="Basic setup complete"
+      title="Workspace prepared."
+      description="Keon knows what to protect, which workspace to prepare, and which guardrails to apply. Connect your first integration to start governing real AI actions."
       footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button
-            size="lg"
-            onClick={() => {
-              finishOnboarding();
-              router.replace("/control");
-            }}
-          >
-            Open workspace overview
-          </Button>
-        </div>
+        <Button
+          size="lg"
+          onClick={() => {
+            finishOnboarding();
+            router.replace("/integrations");
+          }}
+        >
+          Connect your first integration
+        </Button>
       }
     >
       <div className="grid gap-4 md:grid-cols-3">
@@ -65,29 +61,12 @@ export function CompleteStep() {
           </p>
         </div>
         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-          <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">What you can do now</div>
+          <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Selected goals</div>
           <div className="mt-4 space-y-2 text-sm leading-7 text-white/72">
             {selectedGoals.map((goal) => (
               <div key={goal}>{goalLabels[goal] ?? goal}</div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[24px] border border-white/10 bg-black/20 p-6">
-          <div className="font-mono text-xs uppercase tracking-[0.22em] text-white/60">Next best action</div>
-          <p className="mt-3 text-sm leading-7 text-white/72">
-            Open the workspace overview to verify readiness, review the current posture, and move into receipts or guardrails from a stable starting point.
-          </p>
-        </div>
-        <div className="rounded-[24px] border border-white/10 bg-black/20 p-6">
-          <div className="font-mono text-xs uppercase tracking-[0.22em] text-white/60">Optional later</div>
-          <p className="mt-3 text-sm leading-7 text-white/72">
-            {isCollective
-              ? "Inspect sealed receipts and bring additional reviewers into high-stakes decisions when your team is ready."
-              : "Route execution through the MCP Gateway, inspect sealed receipts, and bring reviewers into high-stakes decisions when your team is ready."}
-          </p>
         </div>
       </div>
     </StepShell>
