@@ -51,7 +51,7 @@ function DriftSignal({
   onNavigate,
 }: {
   drift: GovernanceDrift;
-  onNavigate: (sel: Selection) => void;
+  onNavigate: (selection: Selection) => void;
 }) {
   const config = SEVERITY_CONFIG[drift.severity] ?? SEVERITY_CONFIG.info;
 
