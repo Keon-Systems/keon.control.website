@@ -134,7 +134,7 @@ export function getCurrentBlocker(state: OnboardingState) {
  * Canonical first-run routing.
  *
  * Priority order:
- *   1. fully ready (onboarding complete)     → /control
+ *   1. fully ready (onboarding complete)     → /integrations
  *   2. provisioning not yet complete         → /activate  (magic-link gate)
  *   3. provisioning done, at welcome step    → /welcome
  *   4. provisioning done, mid-setup          → /setup?step=...
