@@ -35,6 +35,7 @@ import type {
 } from "@/lib/activation/types";
 import type { ActivationErrorKind } from "./ActivationError";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { ActivationError } from "./ActivationError";
@@ -259,13 +260,13 @@ export function ActivationFlow() {
       <header className="relative border-b border-white/[0.06] bg-black/20 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between px-6 py-4 lg:px-10">
           <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/keon_cyan_cube_32_37.png"
-              alt="Keon"
-              width={26}
-              height={30}
-              className="h-7 w-auto opacity-90"
+            <Image
+              src="/images/keon-control-logo.png"
+              alt="Keon Control"
+              width={64}
+              height={32}
+              priority
+              className="h-8 w-auto opacity-95"
             />
             <div className="font-display text-base font-semibold tracking-[0.18em] text-white">
               KEON CONTROL

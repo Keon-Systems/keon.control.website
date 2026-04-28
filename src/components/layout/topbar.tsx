@@ -75,7 +75,7 @@ export function TopBar({ onToggleSidebar, className }: TopBarProps) {
         )}
 
         <div className="flex items-center gap-2">
-          <Image src="/keon_cyan_cube_32_37.png" alt="Keon" width={32} height={37} className="h-8 w-auto" />
+          <Image src="/images/keon-control-logo.png" alt="Keon Control" width={64} height={32} className="h-8 w-auto" />
           <div>
             <h1 className="font-['Rajdhani'] text-xl font-bold tracking-wide text-[#C5C6C7]">KEON CONTROL</h1>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#66FCF1] opacity-70">

@@ -19,7 +19,7 @@ export function OnboardingLayout({ children }: { children: React.ReactNode }) {
         <header className="border-b border-white/10 bg-black/20 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-5">
             <div className="flex items-center gap-3">
-              <Image src="/keon_cyan_cube_32_37.png" alt="Keon" width={32} height={37} className="h-8 w-auto" />
+              <Image src="/images/keon-control-logo.png" alt="Keon Control" width={64} height={32} className="h-8 w-auto" />
               <div>
                 <div className="font-display text-lg font-semibold tracking-[0.18em] text-white">KEON CONTROL</div>
                 <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#7EE8E0]/80">First-time workspace setup</div>
