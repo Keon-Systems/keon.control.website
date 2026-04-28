@@ -32,26 +32,42 @@ export function SetupChecklist() {
 
       <div className="space-y-3">
         <div className="font-mono text-xs uppercase tracking-[0.24em] text-white/55">Required setup</div>
-        {required.map((item) => (
-          <Link
-            key={`${item.id}-${item.title}`}
-            href={item.href}
-            className={cn(
-              "flex items-start gap-3 rounded-[18px] border p-4 transition",
-              item.status === "current"
-                ? "border-[#7EE8E0]/40 bg-[#7EE8E0]/10"
-                : item.status === "complete"
-                  ? "border-white/10 bg-white/[0.04]"
-                  : "border-white/10 bg-black/20 hover:border-white/20"
-            )}
-          >
-            <StatusIcon status={item.status} />
-            <div className="space-y-1">
-              <div className="font-medium text-white">{item.title}</div>
-              <div className="text-sm leading-6 text-white/65">{item.description}</div>
-            </div>
-          </Link>
-        ))}
+        {required.map((item) => {
+          if (item.status === "upcoming") {
+            return (
+              <div
+                key={`${item.id}-${item.title}`}
+                aria-disabled="true"
+                className="flex cursor-not-allowed items-start gap-3 rounded-[18px] border border-white/10 bg-black/20 p-4 opacity-40"
+              >
+                <StatusIcon status={item.status} />
+                <div className="space-y-1">
+                  <div className="font-medium text-white">{item.title}</div>
+                  <div className="text-sm leading-6 text-white/65">{item.description}</div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={`${item.id}-${item.title}`}
+              href={item.href}
+              className={cn(
+                "flex items-start gap-3 rounded-[18px] border p-4 transition",
+                item.status === "current"
+                  ? "border-[#7EE8E0]/40 bg-[#7EE8E0]/10"
+                  : "border-white/10 bg-white/[0.04]"
+              )}
+            >
+              <StatusIcon status={item.status} />
+              <div className="space-y-1">
+                <div className="font-medium text-white">{item.title}</div>
+                <div className="text-sm leading-6 text-white/65">{item.description}</div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
