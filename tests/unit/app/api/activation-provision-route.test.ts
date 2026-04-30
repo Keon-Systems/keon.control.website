@@ -8,13 +8,25 @@ async function loadRoute() {
   return import("@/app/api/activation/provision/route");
 }
 
+function setNodeEnv(value: string): void {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 describe("activation provision route", () => {
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
     delete process.env.VERCEL_ENV;
     delete process.env.KEON_TEST_ACTIVATION_TOKEN;
     delete process.env.ALLOW_TEST_ACTIVATION;
-    process.env.NODE_ENV = "development";
+    delete process.env.KEON_INVITE_ACTIVATION_TOKEN;
+    delete process.env.KEON_INVITE_ACTIVATION_TOKENS;
+    delete process.env.KEON_INVITE_TENANT_ID;
+    delete process.env.KEON_INVITE_TENANT_NAME;
+    delete process.env.KEON_INVITE_WORKSPACE_ID;
+    delete process.env.KEON_INVITE_WORKSPACE_NAME;
+    delete process.env.KEON_INVITE_ENVIRONMENT;
+    delete process.env.KEON_INVITE_UI_LABEL;
+    setNodeEnv("development");
   });
 
   afterEach(() => {
@@ -98,7 +110,7 @@ describe("activation provision route", () => {
   });
 
   it("disables test activation in production unless explicitly allowed", async () => {
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
     process.env.KEON_TEST_ACTIVATION_TOKEN = "expected-test-token";
     delete process.env.ALLOW_TEST_ACTIVATION;
     const route = await loadRoute();
@@ -114,6 +126,70 @@ describe("activation provision route", () => {
     await expect(response.json()).resolves.toEqual({
       error: "activation_test_token_disabled",
       message: "Test activation tokens are disabled in production.",
+    });
+  });
+
+  it("accepts a configured invite token for an approved workspace setup link", async () => {
+    process.env.KEON_INVITE_ACTIVATION_TOKEN = "approved-invite-token";
+    process.env.KEON_INVITE_TENANT_ID = "ten_preview_001";
+    process.env.KEON_INVITE_TENANT_NAME = "Preview Workspace";
+    process.env.KEON_INVITE_ENVIRONMENT = "sandbox";
+    const route = await loadRoute();
+
+    const response = await route.POST(
+      new NextRequest("http://localhost/api/activation/provision", {
+        method: "POST",
+        body: JSON.stringify({ token: "approved-invite-token" }),
+      })
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      activation: {
+        mode: "invite",
+        source: "invite_token",
+        tenantId: "ten_preview_001",
+        tenantName: "Preview Workspace",
+        workspaceId: "ten_preview_001",
+        workspaceName: "Preview Workspace",
+        environment: "sandbox",
+        uiLabel: "Approved workspace setup",
+      },
+    });
+  });
+
+  it("fails closed when invite activation tokens are not configured", async () => {
+    const route = await loadRoute();
+
+    const response = await route.POST(
+      new NextRequest("http://localhost/api/activation/provision", {
+        method: "POST",
+        body: JSON.stringify({ token: "unanchored-token" }),
+      })
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "invite_activation_not_configured",
+      message: "Invite activation is not configured.",
+    });
+  });
+
+  it("rejects invite tokens that are not on the allowlist", async () => {
+    process.env.KEON_INVITE_ACTIVATION_TOKENS = "approved-a,approved-b";
+    const route = await loadRoute();
+
+    const response = await route.POST(
+      new NextRequest("http://localhost/api/activation/provision", {
+        method: "POST",
+        body: JSON.stringify({ token: "unknown-invite-token" }),
+      })
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "token_invalid",
+      message: "The activation link is not recognized.",
     });
   });
 });

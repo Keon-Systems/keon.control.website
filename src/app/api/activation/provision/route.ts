@@ -2,10 +2,11 @@
  * KEON ACTIVATION — PROVISION API
  *
  * POST /api/activation/provision
- *   Start a provisioning session for a magic-link token.
- *   In production: validates the invite token against the database,
- *   creates the tenant/membership, and returns a provisioning session ID.
- *   Currently: simulates the flow using time-based state progression.
+ *   Start an activation session for a magic-link token.
+ *   Production contract: the public request form never triggers provisioning.
+ *   A valid invite token means review/provisioning already happened and this
+ *   route may bind the user to the prepared workspace setup path.
+ *   Currently: validates env-backed invite/test tokens and simulates progress.
  *
  * GET /api/activation/provision?id=<provisioningId>
  *   Poll for current provisioning state.
@@ -14,8 +15,8 @@
  * ─── Magic Link Integration Note ──────────────────────────────────────────────
  * When wiring to a real auth layer:
  *   1. The magic link handler should redirect to /activate?token=<signed_token>
- *   2. POST here with that token — server validates signature + expiry
- *   3. On valid token: create tenant row + membership binding, return provisioningId
+ *   2. POST here with that token — server validates signature/allowlist + expiry
+ *   3. On valid token: bind/access the prepared workspace setup path
  *   4. On invalid/expired token: return 401 with failureCode "token_expired" or "token_invalid"
  *   5. Store provisioningId in session/cookie for safe refresh support
  */
@@ -49,6 +50,27 @@ function getConfiguredTestActivationToken(): string {
   return (process.env.KEON_TEST_ACTIVATION_TOKEN ?? "").trim();
 }
 
+function getConfiguredInviteActivationTokens(): string[] {
+  return [process.env.KEON_INVITE_ACTIVATION_TOKEN, process.env.KEON_INVITE_ACTIVATION_TOKENS]
+    .flatMap((value) => (value ?? "").split(/[\n,]/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function optionalEnv(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+function tokenMatches(candidate: string, expected: string): boolean {
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+
+  return (
+    candidateBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(candidateBuffer, expectedBuffer)
+  );
+}
+
 function isProductionEnvironment(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
 }
@@ -61,6 +83,12 @@ function buildInviteActivationContext(): ActivationContextSummary {
   return {
     mode: "invite",
     source: "invite_token",
+    tenantId: optionalEnv("KEON_INVITE_TENANT_ID"),
+    tenantName: optionalEnv("KEON_INVITE_TENANT_NAME"),
+    workspaceId: optionalEnv("KEON_INVITE_WORKSPACE_ID") ?? optionalEnv("KEON_INVITE_TENANT_ID"),
+    workspaceName: optionalEnv("KEON_INVITE_WORKSPACE_NAME") ?? optionalEnv("KEON_INVITE_TENANT_NAME"),
+    environment: process.env.KEON_INVITE_ENVIRONMENT === "production" ? "production" : "sandbox",
+    uiLabel: optionalEnv("KEON_INVITE_UI_LABEL") ?? "Approved workspace setup",
   };
 }
 
@@ -86,7 +114,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const activationMode = getRequestedActivationMode(body?.activationMode, token);
 
     // In production: validate token signature, check expiry, prevent replay.
-    // For now: accept any non-empty token string.
+    // This interim route still fails closed unless the token is explicitly anchored in env.
     if (!token) {
       return NextResponse.json(
         { error: "activation_token_required", message: "A valid activation token is required." },
@@ -124,6 +152,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       activation = INTERNAL_TEST_ACTIVATION;
+    } else {
+      const configuredInviteTokens = getConfiguredInviteActivationTokens();
+
+      if (configuredInviteTokens.length === 0) {
+        return NextResponse.json(
+          {
+            error: "invite_activation_not_configured",
+            message: "Invite activation is not configured.",
+          },
+          { status: 503 }
+        );
+      }
+
+      if (!configuredInviteTokens.some((configuredToken) => tokenMatches(token, configuredToken))) {
+        return NextResponse.json(
+          { error: "token_invalid", message: "The activation link is not recognized." },
+          { status: 401 }
+        );
+      }
     }
 
     // Check if a session already exists for this token (idempotent POST)
