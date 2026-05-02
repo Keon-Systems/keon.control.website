@@ -7,7 +7,6 @@ import {
   KeyRound,
   Settings,
   ShieldCheck,
-  Sparkles,
   Waves,
 } from "lucide-react";
 import type * as React from "react";
@@ -27,48 +26,41 @@ export interface NavigationSection {
 
 export const navigationSections: NavigationSection[] = [
   {
-    title: "Start",
+    title: "Prepare",
     items: [
       {
-        label: "Welcome",
-        href: "/welcome",
-        description: "What Keon Control does and how setup works.",
-        icon: Sparkles,
-      },
-      {
-        label: "Workspace overview",
-        href: "/control",
-        description: "See whether your workspace is ready and what to do next.",
-        icon: Home,
-      },
-      {
-        label: "Setup checklist",
+        label: "Setup",
         href: "/setup",
-        description: "Finish the required setup steps for first use.",
+        description: "Configure goals, workspace, integration model, and guardrails.",
+        icon: ShieldCheck,
+      },
+      {
+        label: "Guardrails",
+        href: "/policies",
+        description: "Edit approval and review rules.",
         icon: ShieldCheck,
       },
     ],
   },
   {
-    title: "Setup",
+    title: "Connect",
     items: [
-      {
-        label: "Guardrails",
-        href: "/policies",
-        description: "Choose the starter review and approval rules for AI actions.",
-        icon: ShieldCheck,
-      },
       {
         label: "Integrations",
         href: "/integrations",
-        description: "Connect your first runtime or service to Keon.",
+        description: "Connect runtimes and issue API keys.",
         icon: Waves,
       },
+    ],
+  },
+  {
+    title: "Verify",
+    items: [
       {
-        label: "Settings",
-        href: "/settings",
-        description: "Manage notifications, access hygiene, and workspace details.",
-        icon: Settings,
+        label: "Receipts",
+        href: "/receipts",
+        description: "Review the evidence trail for governed actions.",
+        icon: KeyRound,
       },
     ],
   },
@@ -76,15 +68,15 @@ export const navigationSections: NavigationSection[] = [
     title: "Operate",
     items: [
       {
-        label: "Receipts",
-        href: "/receipts",
-        description: "Review the evidence trail for monitored actions.",
-        icon: KeyRound,
+        label: "Workspace",
+        href: "/control",
+        description: "Operational execution state and active requests.",
+        icon: Home,
       },
       {
         label: "Reviews",
         href: "/collective",
-        description: "Bring collaborative review into higher-risk decisions.",
+        description: "Collaborative review for high-risk decisions.",
         icon: BookOpen,
       },
     ],
@@ -95,9 +87,21 @@ export const navigationSections: NavigationSection[] = [
       {
         label: "Diagnostics",
         href: "/cockpit",
-        description: "Open advanced system inspection after setup is complete.",
+        description: "Advanced system inspection after setup is complete.",
         icon: Activity,
         badge: "Advanced",
+      },
+      {
+        label: "Settings",
+        href: "/settings",
+        description: "Workspace, access, and notification settings.",
+        icon: Settings,
+      },
+      {
+        label: "API Keys",
+        href: "/api-keys",
+        description: "Manage credentials for connected integrations.",
+        icon: KeyRound,
       },
     ],
   },
