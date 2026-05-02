@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test.skip(!process.env.BASE_URL, "BASE_URL is required for smoke tests.");
 
 test("WELCOME-state user at /setup?step=goals is redirected to /welcome", async ({ page }) => {
+  await page.goto("/");
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.setItem("keon.activation.provisioning-complete", "true");
@@ -13,7 +14,9 @@ test("WELCOME-state user at /setup?step=goals is redirected to /welcome", async 
 });
 
 test("completed user revisiting /setup?step=goals sees 'Basic setup complete' in header", async ({ page }) => {
+  await page.goto("/");
   await page.evaluate(() => {
+    localStorage.clear();
     localStorage.setItem("keon.activation.provisioning-complete", "true");
     localStorage.setItem("keon.onboarding.state", JSON.stringify({
       currentStep: "READY",

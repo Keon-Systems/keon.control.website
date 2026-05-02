@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test.skip(!process.env.BASE_URL, "BASE_URL is required for smoke tests.");
 
 test("completing setup routes to /integrations, not /control", async ({ page }) => {
+  await page.goto("/");
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.setItem("keon.activation.provisioning-complete", "true");
@@ -34,14 +35,16 @@ test("completing setup routes to /integrations, not /control", async ({ page }) 
 });
 
 test("upcoming checklist items are not clickable links", async ({ page }) => {
+  await page.goto("/");
   await page.evaluate(() => {
+    localStorage.clear();
     localStorage.setItem("keon.activation.provisioning-complete", "true");
     localStorage.setItem("keon.onboarding.state", JSON.stringify({
       currentStep: "DEFINE_GOALS",
       selectedGoals: [],
       workspaceId: null,
       integrationStepCompleted: false,
-      selectedIntegrationMode: undefined,
+      selectedIntegrationMode: null,
       guardrailPreset: null,
       completed: false,
     }));
