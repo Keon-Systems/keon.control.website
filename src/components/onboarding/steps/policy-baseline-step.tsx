@@ -60,7 +60,7 @@ export function PolicyBaselineStep() {
             router.replace("/setup?step=ready");
           }}
         >
-          Review ready state
+          Review workspace
         </Button>
       }
     >
