@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { navigationSections } from "@/components/layout/navigation";
 
 describe("navigationSections", () => {
-  it("has exactly 5 sections: Prepare, Connect, Verify, Operate, Advanced", () => {
+  it("has exactly 6 sections: Prepare, Connect, Verify, Operate, Platform, Advanced", () => {
     const titles = navigationSections.map((s) => s.title);
-    expect(titles).toEqual(["Prepare", "Connect", "Verify", "Operate", "Advanced"]);
+    expect(titles).toEqual(["Prepare", "Connect", "Verify", "Operate", "Platform", "Advanced"]);
   });
 
   it("does not include /welcome in any section", () => {
@@ -33,5 +33,13 @@ describe("navigationSections", () => {
     const setup = prepare!.items.find((i) => i.href === "/setup");
     expect(setup).toBeDefined();
     expect(setup!.label).toBe("Setup");
+  });
+
+  it("includes Cortex under Platform section", () => {
+    const platform = navigationSections.find((s) => s.title === "Platform");
+    expect(platform).toBeDefined();
+    const cortex = platform?.items.find((i) => i.href === "/cortex");
+    expect(cortex).toBeDefined();
+    expect(cortex?.label).toBe("Cortex");
   });
 });
