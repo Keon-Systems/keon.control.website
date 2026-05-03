@@ -54,6 +54,12 @@ export function IntegrationSelectionStep() {
         </span>
       </div>
 
+      {!selected && (
+        <p className="col-span-full text-center font-mono text-[9px] uppercase tracking-[0.14em] text-white/28 mt-1 mb-2">
+          Choose one to continue
+        </p>
+      )}
+
       {/* Cards */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
         {/* BYO AI */}
@@ -69,9 +75,12 @@ export function IntegrationSelectionStep() {
               : "border-white/10 bg-white/[0.03] hover:border-white/20"
           )}
         >
-          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#B6F09C] mb-4">
+          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#B6F09C] mb-1">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B6F09C]" />
             BYO AI
+          </div>
+          <div className="mb-4 inline-flex items-center rounded-full border border-[#B6F09C]/30 bg-[#B6F09C]/08 px-2.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[#B6F09C]/80">
+            Recommended for first setup
           </div>
           <div className="font-display text-[22px] font-bold text-white leading-tight mb-2">
             Govern the AI you already use
@@ -126,8 +135,11 @@ export function IntegrationSelectionStep() {
           <div className="font-display text-[22px] font-bold text-white leading-tight mb-2">
             Deliberation, not generation
           </div>
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[#7EE8E0]/45 mb-3">
-            For high-stakes decisions that demand more than one output
+          <p className="font-mono text-[10px] text-white/55 mb-1">
+            Use Keon&apos;s multi-agent review process for decisions too sensitive for one model.
+          </p>
+          <div className="mb-3 inline-flex items-center rounded-full border border-[#7EE8E0]/25 bg-[#7EE8E0]/05 px-2.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[#7EE8E0]/60">
+            Advanced · requires enablement
           </div>
           <p className="text-sm leading-[1.72] text-white/62 mb-5 flex-1">
             Replace single-model output with a governed deliberation process. Proposals branch,
