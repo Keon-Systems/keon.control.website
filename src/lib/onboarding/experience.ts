@@ -135,7 +135,7 @@ export function getReadinessLabel(state: OnboardingState) {
 export function getCurrentBlocker(state: OnboardingState) {
   switch (getNextRequiredStep(state)) {
     case "DEFINE_GOALS":
-      return "Choose what you want Keon to manage first.";
+      return "Choose which AI-driven work Keon should govern first.";
     case "CONFIRM_ACCESS":
       return "Confirm the workspace and environment you want to prepare.";
     case "SELECT_INTEGRATION":
