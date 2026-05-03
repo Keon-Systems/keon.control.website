@@ -22,7 +22,7 @@ export function IntegrationSelectionStep() {
   const handleContinue = () => {
     if (!selected) return;
     dispatch({ type: "ADVANCE_INTEGRATION", payload: { selectedMode: selected } });
-    router.replace("/setup?step=guardrails");
+    router.replace("/setup?step=lifecycle-preview");
   };
 
   return (

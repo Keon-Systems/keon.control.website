@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CompleteStep } from "./steps/complete-step";
 import { IntegrationSelectionStep } from "./steps/integration-selection-step";
 import { IntentSelectionStep } from "./steps/intent-selection-step";
+import { LifecyclePreviewStep } from "./steps/lifecycle-preview-step";
 import { PolicyBaselineStep } from "./steps/policy-baseline-step";
 import { ScopeConfirmationStep } from "./steps/scope-confirmation-step";
 
@@ -21,6 +22,8 @@ export function OnboardingFlow() {
       return <ScopeConfirmationStep />;
     case "SELECT_INTEGRATION":
       return <IntegrationSelectionStep />;
+    case "LIFECYCLE_PREVIEW":
+      return <LifecyclePreviewStep />;
     case "SET_GUARDRAILS":
       return <PolicyBaselineStep />;
     case "READY":
