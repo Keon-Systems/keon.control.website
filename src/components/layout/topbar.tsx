@@ -1,23 +1,23 @@
 "use client";
 
+import { clearStoredActivationSession } from "@/lib/activation/session";
+import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
+import { useTenantContext } from "@/lib/control-plane/tenant-context";
 import { getReadinessLabel } from "@/lib/onboarding/experience";
 import { useOnboardingState } from "@/lib/onboarding/store";
-import { clearStoredActivationSession } from "@/lib/activation/session";
-import { useTenantContext } from "@/lib/control-plane/tenant-context";
-import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { Activity, Menu, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-import { Activity, Menu, User } from "lucide-react";
 import * as React from "react";
 
 interface TopBarProps {
@@ -27,6 +27,25 @@ interface TopBarProps {
 
 const FIRST_RUN_ROUTES = new Set(["/", "/get-started", "/welcome", "/setup", "/onboarding"]);
 
+function getRouteSubtitle(pathname: string): string {
+  if (FIRST_RUN_ROUTES.has(pathname) || pathname.startsWith("/onboarding")) {
+    return "FIRST-TIME WORKSPACE SETUP";
+  }
+  if (pathname === "/cockpit" || pathname.startsWith("/cockpit/")) {
+    return "GOVERNANCE COCKPIT";
+  }
+  if (pathname === "/collective" || pathname.startsWith("/collective/")) {
+    return "COGNITION PLANE";
+  }
+  if (pathname === "/control" || pathname.startsWith("/control/")) {
+    return "REALITY PLANE";
+  }
+  if (pathname === "/receipts" || pathname.startsWith("/receipts/")) {
+    return "PROOF SUBSTRATE";
+  }
+  return "OPERATOR CONTROL SURFACE";
+}
+
 export function TopBar({ onToggleSidebar, className }: TopBarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,6 +54,8 @@ export function TopBar({ onToggleSidebar, className }: TopBarProps) {
   const { me } = useTenantContext();
   const { confirmedTenant, isConfirmed, isTestMode } = useTenantBinding();
   const { state, resetOnboarding } = useOnboardingState();
+
+  const routeSubtitle = getRouteSubtitle(pathname);
 
   const handleSignOut = React.useCallback(() => {
     resetOnboarding();
@@ -74,12 +95,14 @@ export function TopBar({ onToggleSidebar, className }: TopBarProps) {
           </button>
         )}
 
-        <div className="flex items-center gap-2">
-          <Image src="/images/keon-control-logo.png" alt="Keon Control" width={64} height={32} className="h-8 w-auto" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+            <Image src="/images/keon-logo-3.png" alt="Keon glyph" width={44} height={44} className="h-11 w-11 object-contain" />
+          </div>
           <div>
             <h1 className="font-['Rajdhani'] text-xl font-bold tracking-wide text-[#C5C6C7]">KEON CONTROL</h1>
             <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#66FCF1] opacity-70">
-              {isOnboardingRoute ? "Workspace setup" : "AI activity control plane"}
+              {routeSubtitle}
             </div>
           </div>
         </div>
