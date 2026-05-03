@@ -174,11 +174,20 @@ export function ScopeConfirmationStep() {
         </div>
       ) : (
         <div className="space-y-4">
-          {isTestMode && (
+          {isTestMode && activationMode === "test" && (
             <div className="rounded-[24px] border border-[#F4D35E]/30 bg-[#F4D35E]/10 p-6">
-              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#F4D35E]">Test activation mode</div>
+              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#F4D35E]">Internal test mode</div>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                This internal test path is pinned to the Keon internal test workspace in sandbox. It does not represent a real invitation or tenant provisioning run.
+                This path is pinned to the Keon internal sandbox workspace and is not a real
+                provisioning run. For internal testing only.
+              </p>
+            </div>
+          )}
+          {isTestMode && activationMode !== "test" && (
+            <div className="rounded-[24px] border border-[#7EE8E0]/20 bg-[#7EE8E0]/05 p-6">
+              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Sandbox workspace</div>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+                Your workspace is running in sandbox mode. Changes here do not affect production systems.
               </p>
             </div>
           )}
@@ -207,6 +216,9 @@ export function ScopeConfirmationStep() {
                 );
               })}
             </div>
+            <p className="mt-3 font-mono text-[10px] text-white/38">
+              Production preparation can be enabled after sandbox validation.
+            </p>
           </div>
 
           {tenants.length === 1 ? (
