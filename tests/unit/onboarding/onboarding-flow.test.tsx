@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { describe, expect, it, vi } from "vitest";
 
 // Mock next/navigation — OnboardingFlow uses useSearchParams
@@ -24,8 +25,6 @@ vi.mock("@/lib/onboarding/store", () => ({
     dispatch: vi.fn(),
   }),
 }));
-
-import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 
 describe("OnboardingFlow — LIFECYCLE_PREVIEW", () => {
   it("renders LifecyclePreviewStep when currentStep is LIFECYCLE_PREVIEW", () => {

@@ -52,7 +52,7 @@ const OPTIONAL_ITEMS: Omit<SetupChecklistItem, "status">[] = [
     required: false,
   },
   {
-    id: "ready",
+    id: "welcome",
     title: "Set up collaborative review",
     description: "Bring other reviewers into sensitive decisions later.",
     href: "/collective",
