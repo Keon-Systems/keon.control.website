@@ -78,7 +78,7 @@ export function CompleteStep() {
         <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Starter guardrails</div>
           <div className="mt-4 font-display text-2xl font-semibold text-white">
-            {guardrailPreset ? guardrailLabels[guardrailPreset] : "Selected"}
+            {guardrailPreset ? guardrailLabels[guardrailPreset] : "Not selected"}
           </div>
           <p className="mt-3 text-sm leading-7 text-white/72">
             Adjustable from Guardrails after setup.
