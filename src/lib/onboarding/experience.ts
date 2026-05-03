@@ -1,6 +1,6 @@
 import type { OnboardingState, OnboardingStep } from "./state-machine";
 
-export type SetupRouteKey = "welcome" | "goals" | "access" | "integration" | "guardrails" | "ready";
+export type SetupRouteKey = "welcome" | "goals" | "access" | "integration" | "lifecycle-preview" | "guardrails" | "ready";
 export type ChecklistStatus = "complete" | "current" | "upcoming";
 
 export interface SetupChecklistItem {
@@ -65,6 +65,7 @@ export const stepRouteMap: Record<OnboardingStep, SetupRouteKey> = {
   DEFINE_GOALS: "goals",
   CONFIRM_ACCESS: "access",
   SELECT_INTEGRATION: "integration",
+  LIFECYCLE_PREVIEW: "lifecycle-preview",
   SET_GUARDRAILS: "guardrails",
   READY: "ready",
 };
@@ -74,6 +75,7 @@ export const routeStepMap: Record<SetupRouteKey, OnboardingStep> = {
   goals: "DEFINE_GOALS",
   access: "CONFIRM_ACCESS",
   integration: "SELECT_INTEGRATION",
+  "lifecycle-preview": "LIFECYCLE_PREVIEW",
   guardrails: "SET_GUARDRAILS",
   ready: "READY",
 };
@@ -83,6 +85,7 @@ export const stepLabels: Record<OnboardingStep, string> = {
   DEFINE_GOALS: "Define your goal",
   CONFIRM_ACCESS: "Confirm workspace access",
   SELECT_INTEGRATION: "Choose operating model",
+  LIFECYCLE_PREVIEW: "See how decisions are governed",
   SET_GUARDRAILS: "Set starter guardrails",
   READY: "Basic setup complete",
 };
@@ -98,6 +101,10 @@ export function getNextRequiredStep(state: OnboardingState): OnboardingStep {
 
   if (!state.integrationStepCompleted) {
     return "SELECT_INTEGRATION";
+  }
+
+  if (!state.lifecyclePreviewSeen) {
+    return "LIFECYCLE_PREVIEW";
   }
 
   if (!state.guardrailPreset) {
@@ -132,6 +139,8 @@ export function getCurrentBlocker(state: OnboardingState) {
     case "CONFIRM_ACCESS":
       return "Confirm the workspace and environment you want to prepare.";
     case "SELECT_INTEGRATION":
+      return "Review how Keon governs decisions before continuing.";
+    case "LIFECYCLE_PREVIEW":
       return "Review how Keon governs decisions before continuing.";
     case "SET_GUARDRAILS":
       return "Choose the starter guardrails Keon should apply.";

@@ -20,6 +20,7 @@ interface OnboardingStoreValue {
   startSetup: () => void;
   saveGoals: (selectedGoals: OnboardingGoal[]) => void;
   confirmAccess: (workspaceId: string) => void;
+  advanceLifecyclePreview: () => void;
   applyGuardrails: (guardrailPreset: GuardrailPreset) => void;
   finishOnboarding: () => void;
   resetOnboarding: () => void;
@@ -32,6 +33,7 @@ const OnboardingStoreContext = React.createContext<OnboardingStoreValue>({
   startSetup: () => undefined,
   saveGoals: () => undefined,
   confirmAccess: () => undefined,
+  advanceLifecyclePreview: () => undefined,
   applyGuardrails: () => undefined,
   finishOnboarding: () => undefined,
   resetOnboarding: () => undefined,
@@ -78,6 +80,7 @@ export function OnboardingStateProvider({ children }: { children: React.ReactNod
       startSetup: () => dispatch({ type: "START_SETUP" }),
       saveGoals: (selectedGoals) => dispatch({ type: "SAVE_GOALS", payload: { selectedGoals } }),
       confirmAccess: (workspaceId) => dispatch({ type: "CONFIRM_ACCESS", payload: { workspaceId } }),
+      advanceLifecyclePreview: () => dispatch({ type: "ADVANCE_LIFECYCLE_PREVIEW" }),
       applyGuardrails: (guardrailPreset) => dispatch({ type: "APPLY_GUARDRAILS", payload: { guardrailPreset } }),
       finishOnboarding: () => dispatch({ type: "FINISH_ONBOARDING" }),
       resetOnboarding: () => dispatch({ type: "RESET" }),
