@@ -12,7 +12,7 @@ import type { ApiKeyPreview, BillingSummary } from "@/lib/api/types";
 import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 
 export default function IntegrationsPage() {
-  const { isConfirmed, confirmedTenant, confirmedEnvironment } = useTenantBinding();
+  const { isConfirmed, confirmedTenant, confirmedEnvironment, isTestMode } = useTenantBinding();
   const [billing, setBilling] = React.useState<BillingSummary | null>(null);
   const [keys, setKeys] = React.useState<ApiKeyPreview[]>([]);
 
@@ -54,7 +54,14 @@ export default function IntegrationsPage() {
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
             <div className="space-y-6">
               <Card>
-                <CardHeader title="Connect in order" description="Most teams follow this path when they are ready to start sending real traffic through Keon." />
+                <CardHeader
+                  title="Connect in order"
+                  description={
+                    isTestMode
+                      ? "Most teams follow this path when they are ready to start sending AI actions through Keon."
+                      : "Most teams follow this path when they are ready to start sending real traffic through Keon."
+                  }
+                />
                 <CardContent className="space-y-4">
                   {[
                     {
@@ -93,8 +100,8 @@ export default function IntegrationsPage() {
               <CardContent className="space-y-3 font-mono text-sm text-[#C5C6C7]">
                 <div>Workspace: {confirmedTenant.name}</div>
                 <div>Environment: {confirmedEnvironment}</div>
-                <div>Plan: {billing?.planName ?? "Loading"}</div>
-                <div>Billing state: {billing?.billingState ?? "Loading"}</div>
+                <div>Plan: {billing?.planName ?? (isTestMode ? "Sandbox Preview" : "—")}</div>
+                <div>Billing state: {billing?.billingState ?? (isTestMode ? "Included during preview" : "—")}</div>
                 <div>API keys: {keys.length}</div>
                 <div className="pt-2">
                   <Badge variant="healthy">Ready for integration setup</Badge>
