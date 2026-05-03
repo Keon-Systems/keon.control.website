@@ -39,6 +39,7 @@ function buildTenantBinding(overrides: Partial<ReturnType<typeof mockUseTenantBi
     setEnvironment: vi.fn(),
     confirmBinding: vi.fn(),
     isTestMode: false,
+    activationMode: "invite",
     ...overrides,
   };
 }
@@ -52,7 +53,7 @@ beforeEach(() => {
 });
 
 describe("ScopeConfirmationStep", () => {
-  it("does not render 'Confirm and continue' during recoverable failure", () => {
+  it("does not render 'Confirm and continue' during backend-unavailable failure", () => {
     const tenantBinding = buildTenantBinding({
       tenants: [],
       isError: true,
@@ -64,7 +65,7 @@ describe("ScopeConfirmationStep", () => {
 
     expect(screen.queryByRole("button", { name: /confirm and continue/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
-    expect(screen.getByText(/you can continue once your workspace is available/i)).toBeInTheDocument();
+    expect(screen.getByText(/workspace access service unavailable/i)).toBeInTheDocument();
   });
 
   it("renders the environment selector when the workspace is ready", () => {
@@ -129,13 +130,42 @@ describe("ScopeConfirmationStep", () => {
   });
 
   it("labels the onboarding step when test activation mode is active", () => {
-    mockUseTenantBinding.mockReturnValue(buildTenantBinding({ isTestMode: true }));
+    mockUseTenantBinding.mockReturnValue(buildTenantBinding({ isTestMode: true, activationMode: "test" }));
 
     render(<ScopeConfirmationStep />);
 
-    expect(screen.getByText(/test activation mode/i)).toBeInTheDocument();
+    expect(screen.getByText(/internal test mode/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/pinned to the keon internal test workspace in sandbox/i)
+      screen.getByText(/pinned to the keon internal sandbox workspace/i)
     ).toBeInTheDocument();
+  });
+
+  it("shows workspace-missing state when API returns no tenants and no error", () => {
+    mockUseTenantBinding.mockReturnValue(
+      buildTenantBinding({ tenants: [], isError: false, isLoading: false })
+    );
+    render(<ScopeConfirmationStep />);
+    expect(screen.getByText(/no workspace is prepared for this access link/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue with sandbox workspace/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("shows backend-unavailable state when API returns an error", () => {
+    mockUseTenantBinding.mockReturnValue(
+      buildTenantBinding({ tenants: [], isError: true, isLoading: false })
+    );
+    render(<ScopeConfirmationStep />);
+    expect(screen.getByText(/workspace access service unavailable/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    expect(screen.queryByText(/no workspace is prepared/i)).not.toBeInTheDocument();
+  });
+
+  it("shows loading state while tenant lookup is in progress", () => {
+    mockUseTenantBinding.mockReturnValue(
+      buildTenantBinding({ tenants: [], isError: false, isLoading: true })
+    );
+    render(<ScopeConfirmationStep />);
+    expect(screen.getByText(/checking workspace access/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
   });
 });
