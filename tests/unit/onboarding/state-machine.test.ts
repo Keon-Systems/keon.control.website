@@ -194,7 +194,9 @@ describe("SELECT_INTEGRATION step", () => {
     expect(result.selectedIntegrationMode).toBe("BYO_AI");
     expect(result.lifecyclePreviewSeen).toBe(false);
   });
+});
 
+describe("LIFECYCLE_PREVIEW step", () => {
   it("ADVANCE_LIFECYCLE_PREVIEW routes to SET_GUARDRAILS and marks lifecyclePreviewSeen true", () => {
     const atPreview: OnboardingState = {
       ...defaultOnboardingState,
@@ -216,18 +218,21 @@ describe("SELECT_INTEGRATION step", () => {
       currentStep: "SELECT_INTEGRATION",
       selectedGoals: ["govern-ai-actions"],
       workspaceId: "tenant_123",
+      lifecyclePreviewSeen: false,
     };
     const result = transitionOnboardingState(atIntegration, { type: "ADVANCE_LIFECYCLE_PREVIEW" });
     expect(result.currentStep).toBe("SELECT_INTEGRATION");
   });
 
-  it("sanitizeOnboardingState preserves lifecyclePreviewSeen: true from hydrated state", () => {
-    const result = sanitizeOnboardingState({ lifecyclePreviewSeen: true });
-    expect(result.lifecyclePreviewSeen).toBe(true);
-  });
+  describe("sanitizeOnboardingState", () => {
+    it("sanitizeOnboardingState preserves lifecyclePreviewSeen: true from hydrated state", () => {
+      const result = sanitizeOnboardingState({ lifecyclePreviewSeen: true });
+      expect(result.lifecyclePreviewSeen).toBe(true);
+    });
 
-  it("sanitizeOnboardingState defaults lifecyclePreviewSeen to false when missing", () => {
-    const result = sanitizeOnboardingState({});
-    expect(result.lifecyclePreviewSeen).toBe(false);
+    it("sanitizeOnboardingState defaults lifecyclePreviewSeen to false when missing", () => {
+      const result = sanitizeOnboardingState({});
+      expect(result.lifecyclePreviewSeen).toBe(false);
+    });
   });
 });

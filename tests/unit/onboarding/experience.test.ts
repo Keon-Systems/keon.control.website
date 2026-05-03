@@ -143,4 +143,17 @@ describe("LIFECYCLE_PREVIEW routing", () => {
     const clamped = clampVisibleStep("guardrails", state);
     expect(clamped).toBe("SET_GUARDRAILS");
   });
+
+  it("getCurrentBlocker returns distinct copy for LIFECYCLE_PREVIEW", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+      integrationStepCompleted: true,
+      lifecyclePreviewSeen: false,
+    };
+    expect(getCurrentBlocker(state)).toBe(
+      "Review the decision governance lifecycle before continuing to guardrails."
+    );
+  });
 });

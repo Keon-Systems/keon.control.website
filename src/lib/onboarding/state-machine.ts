@@ -157,6 +157,7 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
     }
     case "ADVANCE_LIFECYCLE_PREVIEW": {
       if (state.currentStep !== "LIFECYCLE_PREVIEW") return state;
+      if (state.lifecyclePreviewSeen) return state;  // idempotent — already advanced
       return {
         ...state,
         lifecyclePreviewSeen: true,

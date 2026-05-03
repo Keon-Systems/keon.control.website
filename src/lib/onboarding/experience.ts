@@ -141,7 +141,7 @@ export function getCurrentBlocker(state: OnboardingState) {
     case "SELECT_INTEGRATION":
       return "Review how Keon governs decisions before continuing.";
     case "LIFECYCLE_PREVIEW":
-      return "Review how Keon governs decisions before continuing.";
+      return "Review the decision governance lifecycle before continuing to guardrails.";
     case "SET_GUARDRAILS":
       return "Choose the starter guardrails Keon should apply.";
     case "READY":
