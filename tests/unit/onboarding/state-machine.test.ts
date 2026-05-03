@@ -16,7 +16,10 @@ describe("transitionOnboardingState", () => {
       type: "ADVANCE_INTEGRATION",
       payload: { selectedMode: "BYO_AI" },
     });
-    const readyToFinish = transitionOnboardingState(withIntegration, {
+    const withLifecyclePreview = transitionOnboardingState(withIntegration, {
+      type: "ADVANCE_LIFECYCLE_PREVIEW",
+    });
+    const readyToFinish = transitionOnboardingState(withLifecyclePreview, {
       type: "APPLY_GUARDRAILS",
       payload: { guardrailPreset: "balanced" },
     });
@@ -117,7 +120,7 @@ describe("SELECT_INTEGRATION step", () => {
       type: "ADVANCE_INTEGRATION",
       payload: { selectedMode: "BYO_AI" },
     });
-    expect(result.currentStep).toBe("SET_GUARDRAILS");
+    expect(result.currentStep).toBe("LIFECYCLE_PREVIEW");
     expect(result.integrationStepCompleted).toBe(true);
     expect(result.selectedIntegrationMode).toBe("BYO_AI");
   });
@@ -128,7 +131,7 @@ describe("SELECT_INTEGRATION step", () => {
       payload: { selectedMode: "BYO_AI" },
     });
     expect(next.selectedIntegrationMode).toBe("BYO_AI");
-    expect(next.currentStep).toBe("SET_GUARDRAILS");
+    expect(next.currentStep).toBe("LIFECYCLE_PREVIEW");
   });
 
   it("ADVANCE_INTEGRATION with COLLECTIVE captures mode", () => {
@@ -173,5 +176,58 @@ describe("SELECT_INTEGRATION step", () => {
     const unchanged = transitionOnboardingState(atReady, { type: "ADVANCE_INTEGRATION" });
     expect(unchanged.currentStep).toBe("READY");
     expect(unchanged.integrationStepCompleted).toBe(true);
+  });
+
+  it("ADVANCE_INTEGRATION routes to LIFECYCLE_PREVIEW, not SET_GUARDRAILS, and sets lifecyclePreviewSeen false", () => {
+    const withAccess: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "SELECT_INTEGRATION",
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+    };
+    const result = transitionOnboardingState(withAccess, {
+      type: "ADVANCE_INTEGRATION",
+      payload: { selectedMode: "BYO_AI" },
+    });
+    expect(result.currentStep).toBe("LIFECYCLE_PREVIEW");
+    expect(result.integrationStepCompleted).toBe(true);
+    expect(result.selectedIntegrationMode).toBe("BYO_AI");
+    expect(result.lifecyclePreviewSeen).toBe(false);
+  });
+
+  it("ADVANCE_LIFECYCLE_PREVIEW routes to SET_GUARDRAILS and marks lifecyclePreviewSeen true", () => {
+    const atPreview: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "LIFECYCLE_PREVIEW",
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+      integrationStepCompleted: true,
+      selectedIntegrationMode: "BYO_AI",
+      lifecyclePreviewSeen: false,
+    };
+    const result = transitionOnboardingState(atPreview, { type: "ADVANCE_LIFECYCLE_PREVIEW" });
+    expect(result.currentStep).toBe("SET_GUARDRAILS");
+    expect(result.lifecyclePreviewSeen).toBe(true);
+  });
+
+  it("ADVANCE_LIFECYCLE_PREVIEW is a no-op from any step other than LIFECYCLE_PREVIEW", () => {
+    const atIntegration: OnboardingState = {
+      ...defaultOnboardingState,
+      currentStep: "SELECT_INTEGRATION",
+      selectedGoals: ["govern-ai-actions"],
+      workspaceId: "tenant_123",
+    };
+    const result = transitionOnboardingState(atIntegration, { type: "ADVANCE_LIFECYCLE_PREVIEW" });
+    expect(result.currentStep).toBe("SELECT_INTEGRATION");
+  });
+
+  it("sanitizeOnboardingState preserves lifecyclePreviewSeen: true from hydrated state", () => {
+    const result = sanitizeOnboardingState({ lifecyclePreviewSeen: true });
+    expect(result.lifecyclePreviewSeen).toBe(true);
+  });
+
+  it("sanitizeOnboardingState defaults lifecyclePreviewSeen to false when missing", () => {
+    const result = sanitizeOnboardingState({});
+    expect(result.lifecyclePreviewSeen).toBe(false);
   });
 });

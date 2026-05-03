@@ -3,6 +3,7 @@ export const onboardingSteps = [
   "DEFINE_GOALS",
   "CONFIRM_ACCESS",
   "SELECT_INTEGRATION",
+  "LIFECYCLE_PREVIEW",
   "SET_GUARDRAILS",
   "READY",
 ] as const;
@@ -29,6 +30,7 @@ export interface OnboardingState {
   workspaceId: string | null;
   integrationStepCompleted: boolean;
   selectedIntegrationMode: IntegrationMode | undefined;
+  lifecyclePreviewSeen: boolean;
   guardrailPreset: GuardrailPreset | null;
   completed: boolean;
 }
@@ -39,6 +41,7 @@ export type OnboardingEvent =
   | { type: "SAVE_GOALS"; payload: { selectedGoals: OnboardingGoal[] } }
   | { type: "CONFIRM_ACCESS"; payload: { workspaceId: string } }
   | { type: "ADVANCE_INTEGRATION"; payload?: { selectedMode?: IntegrationMode } }
+  | { type: "ADVANCE_LIFECYCLE_PREVIEW" }
   | { type: "APPLY_GUARDRAILS"; payload: { guardrailPreset: GuardrailPreset } }
   | { type: "FINISH_ONBOARDING" }
   | { type: "RESET" };
@@ -49,6 +52,7 @@ export const defaultOnboardingState: OnboardingState = {
   workspaceId: null,
   integrationStepCompleted: false,
   selectedIntegrationMode: undefined,
+  lifecyclePreviewSeen: false,
   guardrailPreset: null,
   completed: false,
 };
@@ -76,6 +80,7 @@ export function sanitizeOnboardingState(input: Partial<OnboardingState> | null |
   const selectedIntegrationMode = isIntegrationMode(input?.selectedIntegrationMode)
     ? input.selectedIntegrationMode
     : undefined;
+  const lifecyclePreviewSeen = input?.lifecyclePreviewSeen === true;
   const guardrailPreset = isGuardrailPreset(input?.guardrailPreset) ? input.guardrailPreset : null;
   const completed = input?.completed === true;
   const currentStep = completed
@@ -90,6 +95,7 @@ export function sanitizeOnboardingState(input: Partial<OnboardingState> | null |
     workspaceId,
     integrationStepCompleted,
     selectedIntegrationMode,
+    lifecyclePreviewSeen,
     guardrailPreset,
     completed,
   };
@@ -145,6 +151,15 @@ export function transitionOnboardingState(state: OnboardingState, event: Onboard
         ...state,
         integrationStepCompleted: true,
         selectedIntegrationMode: mode,
+        currentStep: "LIFECYCLE_PREVIEW",
+        // lifecyclePreviewSeen stays false — user has not seen it yet
+      };
+    }
+    case "ADVANCE_LIFECYCLE_PREVIEW": {
+      if (state.currentStep !== "LIFECYCLE_PREVIEW") return state;
+      return {
+        ...state,
+        lifecyclePreviewSeen: true,
         currentStep: "SET_GUARDRAILS",
       };
     }
