@@ -67,6 +67,7 @@ export function IntentSelectionStep() {
             <button
               key={option.id}
               type="button"
+              aria-pressed={active}
               onClick={() => toggleGoal(option.id)}
               className={cn(
                 "rounded-[24px] border p-6 text-left transition-all duration-200",
@@ -77,17 +78,24 @@ export function IntentSelectionStep() {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="font-display text-2xl font-semibold text-white">{option.title}</div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">{option.subtitle}</div>
                 <div
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full border font-mono text-xs uppercase",
-                    active ? "border-[#7EE8E0] bg-[#7EE8E0] text-[#062125]" : "border-white/20 text-white/55"
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all",
+                    active
+                      ? "border-[#7EE8E0] bg-[#7EE8E0] text-[#062125]"
+                      : "border-white/20 bg-transparent"
                   )}
+                  aria-hidden="true"
                 >
-                  {active ? "On" : "Off"}
+                  {active && (
+                    <svg width="14" height="11" viewBox="0 0 14 11" fill="none" aria-hidden="true">
+                      <path d="M1 5.5L5 9.5L13 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </div>
               </div>
-              <p className="mt-5 text-sm leading-7 text-white/72">{option.description}</p>
+              <div className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-white/30">{option.subtitle}</div>
+              <p className="mt-4 text-sm leading-7 text-white/72">{option.description}</p>
             </button>
           );
         })}

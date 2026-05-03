@@ -68,7 +68,7 @@ describe("SELECT_INTEGRATION routing", () => {
 describe("onboarding experience helpers", () => {
   it("reports in-progress readiness clearly", () => {
     expect(getReadinessLabel(defaultOnboardingState)).toBe("0/4 required steps complete");
-    expect(getCurrentBlocker(defaultOnboardingState)).toMatch(/choose what you want keon to manage first/i);
+    expect(getCurrentBlocker(defaultOnboardingState)).toMatch(/choose which ai-driven work keon should govern first/i);
   });
 
   it("marks required steps complete before ready state", () => {
