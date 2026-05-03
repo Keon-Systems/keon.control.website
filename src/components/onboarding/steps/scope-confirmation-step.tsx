@@ -58,6 +58,7 @@ export function ScopeConfirmationStep() {
   const { confirmAccess } = useOnboardingState();
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const [isSandboxFallback, setIsSandboxFallback] = React.useState(false);
 
   React.useEffect(() => {
     if (!selectedTenantId && tenants.length > 0) {
@@ -70,6 +71,16 @@ export function ScopeConfirmationStep() {
       setIsRetrying(false);
     }
   }, [isLoading, isRetrying]);
+
+  React.useEffect(() => {
+    if (!isSandboxFallback || selectedTenantId !== INTERNAL_TEST_TENANT_ID) {
+      return;
+    }
+    confirmBinding();
+    confirmAccess(INTERNAL_TEST_TENANT_ID);
+    setIsSandboxFallback(false);
+    router.replace("/setup?step=integration");
+  }, [isSandboxFallback, selectedTenantId, confirmBinding, confirmAccess, router]);
 
   const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId) ?? null;
   const viewState = getScopeViewState({
@@ -109,10 +120,8 @@ export function ScopeConfirmationStep() {
           <Button
             size="lg"
             onClick={() => {
-              // INTERNAL_TEST_TENANT_ID ("ten_keon_internal_test") is fully supported
-              // by the tenant binding and downstream API layer — not a fake ID.
-              confirmAccess(INTERNAL_TEST_TENANT_ID);
-              router.replace("/setup?step=integration");
+              selectTenant(INTERNAL_TEST_TENANT_ID);
+              setIsSandboxFallback(true);
             }}
           >
             Continue with sandbox workspace

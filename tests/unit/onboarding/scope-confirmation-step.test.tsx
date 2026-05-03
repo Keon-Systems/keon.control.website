@@ -150,6 +150,38 @@ describe("ScopeConfirmationStep", () => {
     expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
   });
 
+  it("workspace-missing CTA selects sandbox tenant, calls confirmBinding and confirmAccess, and routes to integration", async () => {
+    const mockSelectTenant = vi.fn();
+    const mockConfirmBinding = vi.fn();
+    const mockConfirmAccess = vi.fn();
+
+    mockUseTenantBinding.mockReturnValue(
+      buildTenantBinding({
+        tenants: [],
+        isError: false,
+        isLoading: false,
+        selectTenant: mockSelectTenant,
+        confirmBinding: mockConfirmBinding,
+        // Simulate state update: after selectTenant fires, selectedTenantId becomes INTERNAL_TEST_TENANT_ID
+        selectedTenantId: "ten_keon_internal_test",
+      })
+    );
+    mockUseOnboardingState.mockReturnValue({
+      confirmAccess: mockConfirmAccess,
+    });
+
+    render(<ScopeConfirmationStep />);
+    await userEvent.click(screen.getByRole("button", { name: /continue with sandbox workspace/i }));
+
+    expect(mockSelectTenant).toHaveBeenCalledWith("ten_keon_internal_test");
+    // The effect fires on next render because selectedTenantId is already "ten_keon_internal_test"
+    await waitFor(() => {
+      expect(mockConfirmBinding).toHaveBeenCalled();
+      expect(mockConfirmAccess).toHaveBeenCalledWith("ten_keon_internal_test");
+      expect(mockReplace).toHaveBeenCalledWith("/setup?step=integration");
+    });
+  });
+
   it("shows backend-unavailable state when API returns an error", () => {
     mockUseTenantBinding.mockReturnValue(
       buildTenantBinding({ tenants: [], isError: true, isLoading: false })
