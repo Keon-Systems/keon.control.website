@@ -211,6 +211,10 @@ export function getChecklistItems(state: OnboardingState) {
   return { required, optional };
 }
 
+export function isLifecyclePreviewInterlude(state: OnboardingState): boolean {
+  return state.integrationStepCompleted && !state.lifecyclePreviewSeen;
+}
+
 export function clampVisibleStep(value: string | null | undefined, state: OnboardingState): OnboardingStep {
   if (!value) {
     return getNextRequiredStep(state);

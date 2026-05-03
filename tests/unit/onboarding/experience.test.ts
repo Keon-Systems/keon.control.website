@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampVisibleStep, getCurrentBlocker, getChecklistItems, getReadinessLabel, getNextRequiredStep, stepRouteMap, routeStepMap } from "@/lib/onboarding/experience";
+import { clampVisibleStep, getCurrentBlocker, getChecklistItems, getReadinessLabel, getNextRequiredStep, isLifecyclePreviewInterlude, stepRouteMap, routeStepMap } from "@/lib/onboarding/experience";
 import { defaultOnboardingState, type OnboardingState } from "@/lib/onboarding/state-machine";
 
 describe("SELECT_INTEGRATION routing", () => {
@@ -85,6 +85,35 @@ describe("onboarding experience helpers", () => {
     const checklist = getChecklistItems(state);
     expect(checklist.required.every((item) => item.status === "complete")).toBe(true);
     expect(getReadinessLabel({ ...state, completed: true })).toBe("Basic setup complete");
+  });
+});
+
+describe("isLifecyclePreviewInterlude", () => {
+  it("isLifecyclePreviewInterlude returns true when integration complete and preview not seen", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      integrationStepCompleted: true,
+      lifecyclePreviewSeen: false,
+    };
+    expect(isLifecyclePreviewInterlude(state)).toBe(true);
+  });
+
+  it("isLifecyclePreviewInterlude returns false when preview has been seen", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      integrationStepCompleted: true,
+      lifecyclePreviewSeen: true,
+    };
+    expect(isLifecyclePreviewInterlude(state)).toBe(false);
+  });
+
+  it("isLifecyclePreviewInterlude returns false when integration not yet complete", () => {
+    const state: OnboardingState = {
+      ...defaultOnboardingState,
+      integrationStepCompleted: false,
+      lifecyclePreviewSeen: false,
+    };
+    expect(isLifecyclePreviewInterlude(state)).toBe(false);
   });
 });
 
