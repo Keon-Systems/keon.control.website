@@ -1,8 +1,7 @@
 "use client";
-import * as React from "react";
-import { formatCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { StatusIndicator } from "@/components/ui/status-indicator";
+import { formatCurrency } from "@/lib/format";
 import { AlertCircle } from "lucide-react";
 
 interface AzureResource {
@@ -38,16 +37,16 @@ export function ResourceInventoryTable({ resources }: ResourceInventoryTableProp
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
+    <div className="overflow-x-auto rounded border border-[#384656]">
+      <table className="w-full min-w-[880px] font-mono text-sm">
         <thead>
           <tr className="border-b border-[#384656]">
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Name</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Type</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Resource Group</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Location</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
-            <th className="pb-2 text-right text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Monthly Cost</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Name</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Type</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Resource Group</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Location</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
+            <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Monthly Cost</th>
           </tr>
         </thead>
         <tbody>
@@ -55,19 +54,19 @@ export function ResourceInventoryTable({ resources }: ResourceInventoryTableProp
             const cost = resource.monthlyCost ?? resource.monthlyCostUsd ?? 0;
             return (
               <tr key={resource.resourceId} className="border-b border-[#384656]/40 hover:bg-[#1F2833]/50">
-                <td className="py-3 text-[#66FCF1]">{resource.name}</td>
-                <td className="py-3">
+                <td className="px-4 py-3.5 text-[13px] text-[#66FCF1] sm:text-sm">{resource.name}</td>
+                <td className="px-4 py-3.5">
                   <Badge variant="neutral">{resource.type}</Badge>
                 </td>
-                <td className="py-3 text-[#C5C6C7]">{resource.resourceGroup}</td>
-                <td className="py-3 text-[#C5C6C7] opacity-70">{resource.location}</td>
-                <td className="py-3 text-center">
+                <td className="px-4 py-3.5 text-[13px] text-[#C5C6C7] sm:text-sm">{resource.resourceGroup}</td>
+                <td className="px-4 py-3.5 text-[13px] text-[#C5C6C7] opacity-70 sm:text-sm">{resource.location}</td>
+                <td className="px-4 py-3.5 text-center">
                   <StatusIndicator
                     status={statusToIndicator(resource.status)}
                     label={resource.status}
                   />
                 </td>
-                <td className="py-3 text-right text-[#C5C6C7]">
+                <td className="px-4 py-3.5 text-right text-[13px] text-[#C5C6C7] sm:text-sm">
                   {cost > 0 ? formatCurrency(cost) : "—"}
                 </td>
               </tr>

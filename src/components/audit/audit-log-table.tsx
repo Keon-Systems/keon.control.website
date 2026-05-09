@@ -1,8 +1,7 @@
 "use client";
-import * as React from "react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ClipboardList, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 interface AuditEntry {
   entryId: string;
@@ -76,15 +75,15 @@ export function AuditLogTable({ entries, search, privilegeFilter }: AuditLogTabl
 
   return (
     <div className="overflow-x-auto rounded border border-[#384656]">
-      <table className="w-full min-w-[800px] text-sm">
+      <table className="w-full min-w-[860px] text-sm">
         <thead>
           <tr className="border-b border-[#384656] bg-[#0B0C10]">
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Timestamp</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Actor</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Action</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Target</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Privilege</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Receipt</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Timestamp</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Actor</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Action</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Target</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Privilege</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Receipt</th>
           </tr>
         </thead>
         <tbody>
@@ -95,35 +94,35 @@ export function AuditLogTable({ entries, search, privilegeFilter }: AuditLogTabl
                 key={entry.entryId}
                 className="border-b border-[#384656] last:border-0 hover:bg-[#1F2833] transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70 whitespace-nowrap">
+                <td className="whitespace-nowrap px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                   {formatAge(entry.timestamp)}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   <div>
-                    <p className="font-mono text-xs text-[#C5C6C7]">{entry.actorDisplay}</p>
-                    <p className="font-mono text-xs text-[#C5C6C7] opacity-40">{entry.actorId}</p>
+                    <p className="font-mono text-[13px] text-[#C5C6C7] sm:text-sm">{entry.actorDisplay}</p>
+                    <p className="font-mono text-[12px] text-[#C5C6C7] opacity-40 sm:text-xs">{entry.actorId}</p>
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-[#66FCF1]">{entry.action}</td>
-                <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70 max-w-[200px] truncate" title={entry.target}>
+                <td className="px-4 py-3.5 font-mono text-[13px] text-[#66FCF1] sm:text-sm">{entry.action}</td>
+                <td className="max-w-[280px] px-4 py-3.5 font-mono text-[12px] leading-[1.6] text-[#C5C6C7] opacity-70 break-words sm:text-xs" title={entry.target}>
                   {entry.target}
                 </td>
-                <td className="px-4 py-3">
-                  <span className={cn("rounded px-2 py-0.5 font-mono text-xs", privilegeBadgeClass(pl))}>
+                <td className="px-4 py-3.5">
+                  <span className={cn("rounded px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] sm:text-xs", privilegeBadgeClass(pl))}>
                     {pl}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   {entry.receiptId ? (
                     <Link
                       href={`/receipts/${entry.receiptId}`}
-                      className="flex items-center gap-1 font-mono text-xs text-[#66FCF1] hover:underline"
+                      className="flex items-center gap-1 font-mono text-[12px] text-[#66FCF1] hover:underline sm:text-xs"
                     >
                       {entry.receiptId}
                       <ExternalLink className="h-3 w-3" />
                     </Link>
                   ) : (
-                    <span className="font-mono text-xs text-[#C5C6C7] opacity-30">—</span>
+                    <span className="font-mono text-[12px] text-[#C5C6C7] opacity-30 sm:text-xs">—</span>
                   )}
                 </td>
               </tr>

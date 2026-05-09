@@ -1,5 +1,4 @@
 "use client";
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ShieldAlert } from "lucide-react";
 
@@ -61,16 +60,16 @@ export function ThreatSignalTable({ signals }: ThreatSignalTableProps) {
 
   return (
     <div className="overflow-x-auto rounded border border-[#384656]">
-      <table className="w-full min-w-[640px] text-sm">
+      <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="border-b border-[#384656] bg-[#0B0C10]">
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Signal ID</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Type</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Severity</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Tenant</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">IP</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Age</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Signal ID</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Type</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Severity</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Tenant</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">IP</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Age</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -79,33 +78,33 @@ export function ThreatSignalTable({ signals }: ThreatSignalTableProps) {
               key={signal.signalId}
               className="border-b border-[#384656] last:border-0 hover:bg-[#1F2833] transition-colors"
             >
-              <td className="px-4 py-3 font-mono text-xs text-[#66FCF1]">{signal.signalId}</td>
-              <td className="px-4 py-3">
-                <span className="rounded bg-[#0B0C10] px-2 py-0.5 font-mono text-xs text-[#C5C6C7] border border-[#384656]">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#66FCF1] sm:text-xs">{signal.signalId}</td>
+              <td className="px-4 py-3.5">
+                <span className="rounded border border-[#384656] bg-[#0B0C10] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] sm:text-xs">
                   {signal.type}
                 </span>
               </td>
-              <td className="px-4 py-3">
-                <span className={cn("rounded px-2 py-0.5 font-mono text-xs", severityBadgeClass(signal.severity))}>
+              <td className="px-4 py-3.5">
+                <span className={cn("rounded px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] sm:text-xs", severityBadgeClass(signal.severity))}>
                   {signal.severity}
                 </span>
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {signal.tenantId ?? <span className="opacity-40">—</span>}
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {signal.ip ?? <span className="opacity-40">—</span>}
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {formatAge(signal.timestamp)}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3.5">
                 {isResolved(signal) ? (
-                  <span className="rounded bg-emerald-950 px-2 py-0.5 font-mono text-xs text-emerald-400 border border-emerald-800">
+                  <span className="rounded border border-emerald-800 bg-emerald-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-emerald-400 sm:text-xs">
                     resolved
                   </span>
                 ) : (
-                  <span className="rounded bg-red-950 px-2 py-0.5 font-mono text-xs text-red-400 border border-red-800">
+                  <span className="rounded border border-red-800 bg-red-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-red-400 sm:text-xs">
                     open
                   </span>
                 )}

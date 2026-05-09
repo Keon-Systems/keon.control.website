@@ -1,7 +1,6 @@
 "use client";
-import * as React from "react";
-import { formatCurrency } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
 import { AlertCircle } from "lucide-react";
 
 interface FailedInvoice {
@@ -35,16 +34,16 @@ export function CollectionsTable({ items }: CollectionsTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
+    <div className="overflow-x-auto rounded border border-[#384656]">
+      <table className="w-full min-w-[760px] font-mono text-sm">
         <thead>
           <tr className="border-b border-[#384656]">
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Tenant</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Invoice</th>
-            <th className="pb-2 text-right text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Amount</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Dunning</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Failed At</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Tenant</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Invoice</th>
+            <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Amount</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Dunning</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Failed At</th>
           </tr>
         </thead>
         <tbody>
@@ -57,20 +56,20 @@ export function CollectionsTable({ items }: CollectionsTableProps) {
                 : 0;
             return (
               <tr key={item.invoiceId} className="border-b border-[#384656]/40 hover:bg-[#1F2833]/50">
-                <td className="py-3 text-[#C5C6C7]">{item.tenantId}</td>
-                <td className="py-3 text-[#66FCF1]">{item.invoiceId}</td>
-                <td className="py-3 text-right text-[#C5C6C7]">{formatCurrency(amountDollars)}</td>
-                <td className="py-3 text-center">
+                <td className="px-4 py-3.5 text-[13px] text-[#C5C6C7] sm:text-sm">{item.tenantId}</td>
+                <td className="px-4 py-3.5 text-[13px] text-[#66FCF1] sm:text-sm">{item.invoiceId}</td>
+                <td className="px-4 py-3.5 text-right text-[13px] text-[#C5C6C7] sm:text-sm">{formatCurrency(amountDollars)}</td>
+                <td className="px-4 py-3.5 text-center">
                   <Badge variant={getDunningVariant(item.dunningStep)}>
                     Step {item.dunningStep}
                   </Badge>
                 </td>
-                <td className="py-3 text-center">
+                <td className="px-4 py-3.5 text-center">
                   <Badge variant={item.status === "open" ? "warning" : "neutral"}>
                     {item.status}
                   </Badge>
                 </td>
-                <td className="py-3 text-xs text-[#C5C6C7] opacity-70">
+                <td className="px-4 py-3.5 text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                   {new Date(item.failedAt).toLocaleDateString()}
                 </td>
               </tr>
