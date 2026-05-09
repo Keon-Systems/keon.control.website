@@ -1,50 +1,63 @@
 /**
- * KEON ACTIVATION — PROVISION API
+ * KEON ACTIVATION — PROVISION API (KEO-10)
  *
  * POST /api/activation/provision
- *   Start an activation session for a magic-link token.
- *   Production contract: the public request form never triggers provisioning.
- *   A valid invite token means review/provisioning already happened and this
- *   route may bind the user to the prepared workspace setup path.
- *   Currently: validates env-backed invite/test tokens and simulates progress.
+ *   Start or resume a durable activation session.
+ *   Validates env-backed invite/test tokens, resolves idempotency via DB
+ *   (activationTokenHash + activationMode composite index), and calls
+ *   startProvisioningRun() for new activations.
  *
- * GET /api/activation/provision?id=<provisioningId>
- *   Poll for current provisioning state.
- *   Returns the derived user-facing state (never internal state names).
+ * GET /api/activation/provision?id=<provisioningId>&token=<rawToken>
+ *   Poll for current provisioning state from DB.
+ *   Token is required and validated against the run's hash — fail closed on mismatch.
+ *   Returns the derived user-facing state (never internal state names or raw DB fields).
  *
- * ─── Magic Link Integration Note ──────────────────────────────────────────────
- * When wiring to a real auth layer:
- *   1. The magic link handler should redirect to /activate?token=<signed_token>
- *   2. POST here with that token — server validates signature/allowlist + expiry
- *   3. On valid token: bind/access the prepared workspace setup path
- *   4. On invalid/expired token: return 401 with failureCode "token_expired" or "token_invalid"
- *   5. Store provisioningId in session/cookie for safe refresh support
+ * ─── KEO-10 Changes ───────────────────────────────────────────────────────────
+ *   - Removed module-level in-memory sessions Map.
+ *   - DB ProvisioningRun.state is now the canonical provisioning state source.
+ *   - POST: idempotency via resolveActivationToken() (hash + mode composite lookup).
+ *   - GET: requires ?token= for unauthenticated polling; verifies ownership via hash.
+ *   - ActivationFlow.tsx updated to pass token in GET requests.
+ *
+ * ─── Security Notes ───────────────────────────────────────────────────────────
+ *   - Raw tokens are never persisted, logged, or returned.
+ *   - activationTokenHash is stripped at the service boundary (SafeProvisioningRun).
+ *   - GET requires the raw token to re-verify run ownership before returning state.
+ *   - stateHistory contains only state labels and timestamps — no tokens or PII.
+ *
+ * ─── startedByEmail Placeholder ───────────────────────────────────────────────
+ *   - The raw token carries no email claim in this route (no JWT decoding yet).
+ *   - KEON_INVITE_EMAIL env var is used for invite mode if configured.
+ *   - Otherwise a sentinel address is written (future: replace with JWT claims).
  */
 
-import { deriveProvisioningState, resolveSimulatedState } from "@/lib/activation/state-machine";
-import { INTERNAL_TEST_ACTIVATION } from "@/lib/activation/test-mode";
+import "server-only";
+import {
+  getProvisioningRun,
+  mapActivationMode,
+  mapActivationSource,
+  resolveActivationToken,
+  startProvisioningRun,
+  type SafeProvisioningRun,
+} from "@/server/db/provisioning";
+import { deriveProvisioningState } from "@/lib/activation/state-machine";
+import {
+  INTERNAL_TEST_ACTIVATION,
+  INTERNAL_TEST_TENANT_ID,
+  INTERNAL_TEST_WORKSPACE_NAME,
+} from "@/lib/activation/test-mode";
 import type {
   ActivationContextSummary,
   ActivationMode,
+  ProvisioningInternalState,
   ProvisioningStatusResponse,
   StartProvisioningResponse,
 } from "@/lib/activation/types";
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 
-// ─── In-process session store ─────────────────────────────────────────────────
-// In production: replace with Redis/Postgres-backed provisioning records.
-// This module-level map persists within a single server process.
-
-interface ProvisioningRecord {
-  id: string;
-  token: string;
-  activation: ActivationContextSummary;
-  createdAt: number;
-  forceFailed?: boolean;
-}
-
-const sessions = new Map<string, ProvisioningRecord>();
+// ─── Token / Env Helpers ──────────────────────────────────────────────────────
 
 function getConfiguredTestActivationToken(): string {
   return (process.env.KEON_TEST_ACTIVATION_TOKEN ?? "").trim();
@@ -65,9 +78,9 @@ function optionalEnv(name: string): string | undefined {
 function tokenMatches(candidate: string, expected: string): boolean {
   const candidateBuffer = Buffer.from(candidate);
   const expectedBuffer = Buffer.from(expected);
-
   return (
-    candidateBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(candidateBuffer, expectedBuffer)
+    candidateBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(candidateBuffer, expectedBuffer)
   );
 }
 
@@ -92,17 +105,62 @@ function buildInviteActivationContext(): ActivationContextSummary {
   };
 }
 
+function isSandboxFallbackAllowed(): boolean {
+  return process.env.KEON_INVITE_ALLOW_SANDBOX_FALLBACK === "true";
+}
+
+function buildSandboxFallbackActivationContext(): ActivationContextSummary {
+  return {
+    mode: "invite",
+    source: "sandbox_fallback",
+    tenantId: INTERNAL_TEST_TENANT_ID,
+    tenantName: INTERNAL_TEST_WORKSPACE_NAME,
+    workspaceId: INTERNAL_TEST_TENANT_ID,
+    workspaceName: INTERNAL_TEST_WORKSPACE_NAME,
+    environment: "sandbox",
+    uiLabel: "Sandbox workspace fallback",
+  };
+}
+
 function getRequestedActivationMode(value: unknown, token: string): ActivationMode {
-  if (value === "test") {
-    return "test";
-  }
-
+  if (value === "test") return "test";
   const configuredTestToken = getConfiguredTestActivationToken();
-  if (configuredTestToken && token === configuredTestToken) {
-    return "test";
-  }
-
+  if (configuredTestToken && token === configuredTestToken) return "test";
   return "invite";
+}
+
+// ─── Activation Context from DB Run ──────────────────────────────────────────
+// Rebuilds ActivationContextSummary from a SafeProvisioningRun for GET responses.
+// The activation context is display-only; values come from env vars and constants,
+// not from DB records. The (activationMode, activationSource) pair discriminates
+// which context applies — matching the same logic used during POST validation.
+
+function buildActivationFromRun(run: SafeProvisioningRun): ActivationContextSummary {
+  if (run.activationMode === "TEST") {
+    return INTERNAL_TEST_ACTIVATION;
+  }
+  // INVITE + TEST_TOKEN = sandbox_fallback (KEO-9 maps sandbox_fallback → TEST_TOKEN)
+  if (run.activationSource === "TEST_TOKEN") {
+    return buildSandboxFallbackActivationContext();
+  }
+  // INVITE + INVITE_TOKEN
+  return buildInviteActivationContext();
+}
+
+// ─── DB State → ProvisioningInternalState ────────────────────────────────────
+// Prisma ProvisioningState values are SCREAMING_SNAKE_CASE.
+// ProvisioningInternalState (types.ts) uses the same tokens in snake_case.
+// The transform is a direct lowercase — no lookup table required.
+
+function mapDbStateToInternal(dbState: string): ProvisioningInternalState {
+  return dbState.toLowerCase() as ProvisioningInternalState;
+}
+
+// ─── startedByEmail Placeholder ──────────────────────────────────────────────
+
+function getStartedByEmail(mode: ActivationMode): string {
+  if (mode === "test") return "test-activation@keon.internal";
+  return optionalEnv("KEON_INVITE_EMAIL") ?? "invite-activation@keon.internal";
 }
 
 // ─── POST — Start Provisioning ────────────────────────────────────────────────
@@ -113,8 +171,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const token = typeof body?.token === "string" ? body.token.trim() : "";
     const activationMode = getRequestedActivationMode(body?.activationMode, token);
 
-    // In production: validate token signature, check expiry, prevent replay.
-    // This interim route still fails closed unless the token is explicitly anchored in env.
     if (!token) {
       return NextResponse.json(
         { error: "activation_token_required", message: "A valid activation token is required." },
@@ -122,7 +178,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    let activation = buildInviteActivationContext();
+    // ── Validate token against env-backed allowlist ──────────────────────────
+    let activation: ActivationContextSummary;
 
     if (activationMode === "test") {
       const configuredTestToken = getConfiguredTestActivationToken();
@@ -171,42 +228,75 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           { status: 401 }
         );
       }
-    }
 
-    // Check if a session already exists for this token (idempotent POST)
-    for (const [, record] of sessions) {
-      if (record.token === token && record.activation.mode === activationMode) {
-        return NextResponse.json<StartProvisioningResponse>({
-          provisioningId: record.id,
-          activation: record.activation,
-        });
+      activation = buildInviteActivationContext();
+
+      if (!activation.tenantId || !activation.workspaceId) {
+        if (!isSandboxFallbackAllowed()) {
+          return NextResponse.json(
+            {
+              error: "invite_workspace_missing",
+              message: "Activation link is valid, but no prepared workspace is attached.",
+            },
+            { status: 409 }
+          );
+        }
+        activation = buildSandboxFallbackActivationContext();
       }
     }
 
-    const provisioningId = `prov_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    sessions.set(provisioningId, {
-      id: provisioningId,
-      token,
-      activation,
-      createdAt: Date.now(),
-    });
+    // ── Map to Prisma enums via KEO-9 helpers ─────────────────────────────────
+    const prismaMode = mapActivationMode(activationMode);
+    const prismaSource = mapActivationSource(activation.source);
 
-    if (activation.mode === "test") {
+    // ── Idempotency: check for existing durable run ───────────────────────────
+    const existingRun = await resolveActivationToken(token, prismaMode);
+    if (existingRun) {
+      return NextResponse.json<StartProvisioningResponse>({
+        provisioningId: existingRun.id,
+        activation,
+      });
+    }
+
+    // ── Create new durable provisioning run ───────────────────────────────────
+    let run: SafeProvisioningRun;
+    try {
+      const result = await startProvisioningRun({
+        rawToken: token,
+        activationMode: prismaMode,
+        activationSource: prismaSource,
+        startedByEmail: getStartedByEmail(activationMode),
+        tenantName: optionalEnv("KEON_INVITE_TENANT_NAME"),
+      });
+      run = result.run;
+    } catch (err) {
+      // Idempotency race: concurrent POST with same token won the write.
+      // Resolve the now-committed run and return it rather than surfacing the error.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        const racedRun = await resolveActivationToken(token, prismaMode);
+        if (racedRun) {
+          return NextResponse.json<StartProvisioningResponse>({
+            provisioningId: racedRun.id,
+            activation,
+          });
+        }
+      }
+      throw err;
+    }
+
+    if (activationMode === "test") {
       console.info("[activation] accepted internal test activation token", {
-        provisioningId,
+        provisioningId: run.id,
         environment: activation.environment,
         tenantId: activation.tenantId,
         workspaceId: activation.workspaceId,
       });
     }
 
-    // Cleanup stale sessions (> 30 minutes old) on each new session creation
-    const cutoff = Date.now() - 30 * 60 * 1000;
-    for (const [id, record] of sessions) {
-      if (record.createdAt < cutoff) sessions.delete(id);
-    }
-
-    return NextResponse.json<StartProvisioningResponse>({ provisioningId, activation }, { status: 201 });
+    return NextResponse.json<StartProvisioningResponse>(
+      { provisioningId: run.id, activation },
+      { status: 201 }
+    );
   } catch {
     return NextResponse.json(
       { error: "internal_error", message: "Unable to start provisioning." },
@@ -219,6 +309,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const provisioningId = request.nextUrl.searchParams.get("id");
+  const rawToken = request.nextUrl.searchParams.get("token");
 
   if (!provisioningId) {
     return NextResponse.json(
@@ -227,31 +318,52 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const record = sessions.get(provisioningId);
-  if (!record) {
+  if (!rawToken) {
+    return NextResponse.json(
+      { error: "token_required", message: "Token is required for unauthenticated polling." },
+      { status: 400 }
+    );
+  }
+
+  // ── Fetch run from DB ─────────────────────────────────────────────────────
+  const run = await getProvisioningRun(provisioningId);
+  if (!run) {
     return NextResponse.json(
       { error: "session_not_found", message: "Provisioning session not found or has expired." },
       { status: 404 }
     );
   }
 
-  const internalState = record.forceFailed
-    ? "provisioning_failed"
-    : resolveSimulatedState(record.createdAt);
+  // ── Verify token ownership ────────────────────────────────────────────────
+  // Hash the supplied token and confirm it resolves to this exact run.
+  // resolveActivationToken performs (hash, activationMode) → SafeProvisioningRun lookup.
+  // If the returned run ID does not match the requested ID, fail closed:
+  // the token is valid for a different run (different mode or different tenant).
+  const tokenRun = await resolveActivationToken(rawToken, run.activationMode);
+  if (!tokenRun || tokenRun.id !== provisioningId) {
+    return NextResponse.json(
+      { error: "token_mismatch", message: "Token does not match this provisioning session." },
+      { status: 403 }
+    );
+  }
 
+  // ── Build response ────────────────────────────────────────────────────────
+  const internalState = mapDbStateToInternal(run.state);
   const state = deriveProvisioningState(internalState);
+  const activation = buildActivationFromRun(run);
 
   const response: ProvisioningStatusResponse = {
     provisioningId,
     state,
-    activation: record.activation,
+    activation,
     ...(internalState === "provisioning_complete" && {
-      completedAt: new Date().toISOString(),
+      completedAt: run.completedAt?.toISOString() ?? new Date().toISOString(),
     }),
     ...(internalState === "provisioning_failed" && {
-      failedAt: new Date().toISOString(),
-      failureCode: "workspace_bootstrap_failed",
-      failureMessage: "Unable to initialize workspace. Your invitation is still valid.",
+      failedAt: run.failedAt?.toISOString() ?? new Date().toISOString(),
+      failureCode: run.failureCode ?? "provisioning_failed",
+      failureMessage:
+        run.failureMessage ?? "Unable to initialize workspace. Your invitation is still valid.",
     }),
   };
 

@@ -69,8 +69,10 @@ async function startProvisioning(
   return res.json();
 }
 
-async function pollProvisioningStatus(id: string): Promise<ProvisioningStatusResponse> {
-  const res = await fetch(`/api/activation/provision?id=${encodeURIComponent(id)}`);
+async function pollProvisioningStatus(id: string, token: string): Promise<ProvisioningStatusResponse> {
+  const res = await fetch(
+    `/api/activation/provision?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`
+  );
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw Object.assign(new Error(body?.error ?? "poll_failed"), { status: res.status });
@@ -137,13 +139,13 @@ function useProvisioningFlow(token: string | null, activationMode: ActivationMod
 
   // ── Poll for status ──
   React.useEffect(() => {
-    if (!provisioningId || errorKind || isComplete) return;
+    if (!provisioningId || !token || errorKind || isComplete) return;
 
     let active = true;
 
     const poll = async () => {
       try {
-        const response = await pollProvisioningStatus(provisioningId);
+        const response = await pollProvisioningStatus(provisioningId, token);
         if (!active || !mountedRef.current) return;
 
         setActivation(response.activation);
@@ -180,7 +182,7 @@ function useProvisioningFlow(token: string | null, activationMode: ActivationMod
       active = false;
       clearInterval(interval);
     };
-  }, [provisioningId, errorKind, isComplete, startedAt]);
+  }, [provisioningId, token, errorKind, isComplete, startedAt]);
 
   const retry = React.useCallback(() => {
     if (typeof window !== "undefined") {
