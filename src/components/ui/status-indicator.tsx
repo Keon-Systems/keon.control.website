@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 /**
  * StatusIndicator variants for Keon Command Center
@@ -100,7 +100,7 @@ const StatusIndicator = React.forwardRef<
         aria-label={label ?? status ?? undefined}
       />
       {label && (
-        <span className="text-xs font-mono uppercase tracking-wide text-[--steel]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[--steel] sm:text-xs sm:tracking-wide">
           {label}
         </span>
       )}

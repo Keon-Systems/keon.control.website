@@ -1,5 +1,4 @@
 "use client";
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Ban } from "lucide-react";
 
@@ -85,16 +84,16 @@ export function AbuseEventTable({ events }: AbuseEventTableProps) {
 
   return (
     <div className="overflow-x-auto rounded border border-[#384656]">
-      <table className="w-full min-w-[700px] text-sm">
+      <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="border-b border-[#384656] bg-[#0B0C10]">
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Event ID</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Type</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Tenant</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Actor</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Severity</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Age</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Event ID</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Type</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Tenant</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Actor</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Severity</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Age</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -107,33 +106,33 @@ export function AbuseEventTable({ events }: AbuseEventTableProps) {
                 key={getEventId(event) + idx}
                 className="border-b border-[#384656] last:border-0 hover:bg-[#1F2833] transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-xs text-[#66FCF1]">{getEventId(event)}</td>
-                <td className="px-4 py-3">
-                  <span className={cn("rounded px-2 py-0.5 font-mono text-xs", typeBadgeClass(event.type))}>
+                <td className="px-4 py-3.5 font-mono text-[12px] text-[#66FCF1] sm:text-xs">{getEventId(event)}</td>
+                <td className="px-4 py-3.5">
+                  <span className={cn("rounded px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] sm:text-xs", typeBadgeClass(event.type))}>
                     {event.type}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+                <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                   {event.tenantId ?? <span className="opacity-40">—</span>}
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+                <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                   {event.actorId ?? <span className="opacity-40">—</span>}
                 </td>
-                <td className="px-4 py-3">
-                  <span className={cn("rounded px-2 py-0.5 font-mono text-xs", severityBadgeClass(event.severity))}>
+                <td className="px-4 py-3.5">
+                  <span className={cn("rounded px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] sm:text-xs", severityBadgeClass(event.severity))}>
                     {event.severity}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+                <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                   {ts ? formatAge(ts) : <span className="opacity-40">—</span>}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   {isResolved ? (
-                    <span className="rounded bg-emerald-950 px-2 py-0.5 font-mono text-xs text-emerald-400 border border-emerald-800">
+                    <span className="rounded border border-emerald-800 bg-emerald-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-emerald-400 sm:text-xs">
                       {status}
                     </span>
                   ) : (
-                    <span className="rounded bg-amber-950 px-2 py-0.5 font-mono text-xs text-amber-400 border border-amber-800">
+                    <span className="rounded border border-amber-800 bg-amber-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-amber-400 sm:text-xs">
                       {status}
                     </span>
                   )}

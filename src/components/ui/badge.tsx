@@ -1,6 +1,6 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 /**
  * Badge variants for Keon Command Center
@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 const badgeVariants = cva(
   [
     "inline-flex items-center gap-1.5",
-    "px-2 py-0.5",
-    "text-xs font-mono uppercase tracking-wide",
+    "shrink-0 whitespace-nowrap px-2.5 py-1",
+    "font-mono text-[11px] uppercase leading-none tracking-[0.08em] sm:text-xs sm:tracking-wide",
     "border rounded-sm", // 2px max
     "transition-all duration-75",
   ].join(" "),

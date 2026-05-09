@@ -1,5 +1,4 @@
 "use client";
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Eye } from "lucide-react";
 
@@ -63,16 +62,16 @@ export function AuthAnomalyTable({ anomalies }: AuthAnomalyTableProps) {
 
   return (
     <div className="overflow-x-auto rounded border border-[#384656]">
-      <table className="w-full min-w-[700px] text-sm">
+      <table className="w-full min-w-[780px] text-sm">
         <thead>
           <tr className="border-b border-[#384656] bg-[#0B0C10]">
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Anomaly ID</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Type</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Confidence</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Tenant</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Actor</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Detected</th>
-            <th className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Anomaly ID</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Type</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Confidence</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Tenant</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Actor</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Detected</th>
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -81,15 +80,15 @@ export function AuthAnomalyTable({ anomalies }: AuthAnomalyTableProps) {
               key={anomaly.anomalyId}
               className="border-b border-[#384656] last:border-0 hover:bg-[#1F2833] transition-colors"
             >
-              <td className="px-4 py-3 font-mono text-xs text-[#66FCF1]">{anomaly.anomalyId}</td>
-              <td className="px-4 py-3">
-                <span className={cn("rounded px-2 py-0.5 font-mono text-xs", typeBadgeClass(anomaly.type))}>
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#66FCF1] sm:text-xs">{anomaly.anomalyId}</td>
+              <td className="px-4 py-3.5">
+                <span className={cn("rounded px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] sm:text-xs", typeBadgeClass(anomaly.type))}>
                   {anomaly.type}
                 </span>
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3.5">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-20 rounded-full bg-[#0B0C10] overflow-hidden">
+                  <div className="h-2 w-24 overflow-hidden rounded-full bg-[#0B0C10]">
                     <div
                       className={cn(
                         "h-full rounded-full",
@@ -99,27 +98,27 @@ export function AuthAnomalyTable({ anomalies }: AuthAnomalyTableProps) {
                       style={{ width: `${Math.round(anomaly.confidence * 100)}%` }}
                     />
                   </div>
-                  <span className="font-mono text-xs text-[#C5C6C7] opacity-70">
+                  <span className="font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                     {Math.round(anomaly.confidence * 100)}%
                   </span>
                 </div>
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {anomaly.tenantId ?? <span className="opacity-40">—</span>}
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {anomaly.actorId ?? <span className="opacity-40">—</span>}
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {formatAge(anomaly.detectedAt)}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3.5">
                 {isMitigated(anomaly) ? (
-                  <span className="rounded bg-emerald-950 px-2 py-0.5 font-mono text-xs text-emerald-400 border border-emerald-800">
+                  <span className="rounded border border-emerald-800 bg-emerald-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-emerald-400 sm:text-xs">
                     mitigated
                   </span>
                 ) : (
-                  <span className="rounded bg-red-950 px-2 py-0.5 font-mono text-xs text-red-400 border border-red-800">
+                  <span className="rounded border border-red-800 bg-red-950 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-red-400 sm:text-xs">
                     open
                   </span>
                 )}

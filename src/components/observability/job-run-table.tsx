@@ -1,8 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export interface JobEntry {
   jobId: string;
@@ -46,20 +45,20 @@ export function JobRunTable({ entries }: JobRunTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
+    <div className="overflow-x-auto rounded border border-[#384656]">
+      <table className="w-full min-w-[720px]">
         <thead className="border-b border-[#384656] bg-[#0B0C10]">
           <tr>
-            <th className="p-3 text-left font-mono text-xs uppercase tracking-wider text-[#C5C6C7] opacity-60">
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wider">
               Job
             </th>
-            <th className="p-3 text-left font-mono text-xs uppercase tracking-wider text-[#C5C6C7] opacity-60">
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wider">
               Queue
             </th>
-            <th className="p-3 text-left font-mono text-xs uppercase tracking-wider text-[#C5C6C7] opacity-60">
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wider">
               Attempts
             </th>
-            <th className="p-3 text-left font-mono text-xs uppercase tracking-wider text-[#C5C6C7] opacity-60">
+            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wider">
               Status
             </th>
           </tr>
@@ -70,28 +69,28 @@ export function JobRunTable({ entries }: JobRunTableProps) {
               key={entry.jobId}
               className="transition-colors hover:bg-[#384656]/20"
             >
-              <td className="p-3">
-                <span className="font-mono text-sm text-[#C5C6C7]">{entry.name}</span>
-                <div className="font-mono text-xs text-[#C5C6C7] opacity-40">{entry.jobId}</div>
+              <td className="px-4 py-3.5">
+                <span className="font-mono text-[13px] text-[#C5C6C7] sm:text-sm">{entry.name}</span>
+                <div className="font-mono text-[12px] text-[#C5C6C7] opacity-40 sm:text-xs">{entry.jobId}</div>
               </td>
-              <td className="p-3">
-                <span className="font-mono text-xs text-[#C5C6C7] opacity-70">{entry.queue}</span>
+              <td className="px-4 py-3.5">
+                <span className="font-mono text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">{entry.queue}</span>
               </td>
-              <td className="p-3">
+              <td className="px-4 py-3.5">
                 <span
                   className={cn(
-                    "font-mono text-sm tabular-nums",
+                    "font-mono text-[13px] tabular-nums sm:text-sm",
                     entry.attempts > 3 ? "text-amber-400" : "text-[#C5C6C7]"
                   )}
                 >
                   {entry.attempts}
                 </span>
               </td>
-              <td className="p-3">
+              <td className="px-4 py-3.5">
                 <Badge
                   variant={statusBadgeVariant[entry.status]}
                   className={cn(
-                    "font-mono text-xs uppercase",
+                    "font-mono",
                     entry.status === "running" && "border-[#66FCF1] text-[#66FCF1]"
                   )}
                 >
