@@ -1,5 +1,4 @@
 "use client";
-import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 
@@ -33,29 +32,29 @@ export function MessageHistoryTable({ messages }: MessageHistoryTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
+    <div className="overflow-x-auto rounded border border-[#384656]">
+      <table className="w-full min-w-[720px] font-mono text-sm">
         <thead>
           <tr className="border-b border-[#384656]">
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Subject</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Tenants</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Channel</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Sent At</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Subject</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Tenants</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Channel</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Sent At</th>
           </tr>
         </thead>
         <tbody>
           {messages.map((msg) => (
             <tr key={msg.messageId} className="border-b border-[#384656]/40 hover:bg-[#1F2833]/50">
-              <td className="py-3 text-[#C5C6C7]">{msg.subject}</td>
-              <td className="py-3 text-center text-[#C5C6C7]">{tenantCount(msg.tenantIds)}</td>
-              <td className="py-3 text-center">
+              <td className="px-4 py-3.5 text-[13px] leading-[1.6] text-[#C5C6C7] sm:text-sm">{msg.subject}</td>
+              <td className="px-4 py-3.5 text-center text-[13px] text-[#C5C6C7] sm:text-sm">{tenantCount(msg.tenantIds)}</td>
+              <td className="px-4 py-3.5 text-center">
                 <Badge variant="neutral">{msg.channel}</Badge>
               </td>
-              <td className="py-3 text-center">
+              <td className="px-4 py-3.5 text-center">
                 <Badge variant={msg.status === "sent" ? "healthy" : "warning"}>{msg.status}</Badge>
               </td>
-              <td className="py-3 text-xs text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 text-[12px] text-[#C5C6C7] opacity-70 sm:text-xs">
                 {new Date(msg.sentAt).toLocaleString()}
               </td>
             </tr>

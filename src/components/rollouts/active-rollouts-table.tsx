@@ -1,5 +1,4 @@
 "use client";
-import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
 
@@ -36,31 +35,31 @@ export function ActiveRolloutsTable({ rollouts }: ActiveRolloutsTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
+    <div className="overflow-x-auto rounded border border-[#384656]">
+      <table className="w-full min-w-[760px] font-mono text-sm">
         <thead>
           <tr className="border-b border-[#384656]">
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Name</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Status</th>
-            <th className="pb-2 text-center text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Canary %</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Version</th>
-            <th className="pb-2 text-left text-xs uppercase tracking-wide text-[#C5C6C7] opacity-60">Started</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Name</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Status</th>
+            <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Canary %</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Version</th>
+            <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.08em] text-[#C5C6C7] opacity-60 sm:text-xs sm:tracking-wide">Started</th>
           </tr>
         </thead>
         <tbody>
           {rollouts.map((rollout) => (
             <tr key={rollout.rolloutId} className="border-b border-[#384656]/40 hover:bg-[#1F2833]/50">
-              <td className="py-3 text-[#C5C6C7]">{rollout.name}</td>
-              <td className="py-3 text-center">
+              <td className="px-4 py-3.5 text-[13px] text-[#C5C6C7] sm:text-sm">{rollout.name}</td>
+              <td className="px-4 py-3.5 text-center">
                 <Badge variant={statusVariant(rollout.status)}>{rollout.status}</Badge>
               </td>
-              <td className="py-3 text-center text-[#66FCF1]">
+              <td className="px-4 py-3.5 text-center text-[13px] text-[#66FCF1] sm:text-sm">
                 {rollout.canaryPercentage !== undefined ? `${rollout.canaryPercentage}%` : "—"}
               </td>
-              <td className="py-3 text-[#C5C6C7] opacity-70">
+              <td className="px-4 py-3.5 text-[13px] text-[#C5C6C7] opacity-70 sm:text-sm">
                 {rollout.targetVersion ?? "—"}
               </td>
-              <td className="py-3 text-xs text-[#C5C6C7] opacity-60">
+              <td className="px-4 py-3.5 text-[12px] text-[#C5C6C7] opacity-60 sm:text-xs">
                 {rollout.startedAt
                   ? new Date(rollout.startedAt).toLocaleString()
                   : rollout.scheduledFor
