@@ -1,13 +1,16 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// Stable mock references
+const mockReplace = vi.fn();
+const mockDispatch = vi.fn();
+
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: mockReplace }),
 }));
 
 // Mock onboarding store
-const mockDispatch = vi.fn();
 vi.mock("@/lib/onboarding/store", () => ({
   useOnboardingState: () => ({
     state: {
@@ -27,6 +30,7 @@ import { IntegrationSelectionStep } from "@/components/onboarding/steps/integrat
 
 beforeEach(() => {
   mockDispatch.mockClear();
+  mockReplace.mockClear();
 });
 
 describe("IntegrationSelectionStep", () => {
@@ -79,6 +83,13 @@ describe("IntegrationSelectionStep", () => {
       type: "ADVANCE_INTEGRATION",
       payload: { selectedMode: "COLLECTIVE" },
     });
+  });
+
+  it("clicking Continue routes to lifecycle-preview, not guardrails", () => {
+    render(<IntegrationSelectionStep />);
+    fireEvent.click(screen.getByRole("button", { name: /byo ai/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    expect(mockReplace).toHaveBeenCalledWith("/setup?step=lifecycle-preview");
   });
 
   it("renders the 'Watch a decision unfold' CTA", () => {

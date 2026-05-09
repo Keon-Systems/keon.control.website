@@ -22,7 +22,7 @@ export function IntegrationSelectionStep() {
   const handleContinue = () => {
     if (!selected) return;
     dispatch({ type: "ADVANCE_INTEGRATION", payload: { selectedMode: selected } });
-    router.replace("/setup?step=guardrails");
+    router.replace("/setup?step=lifecycle-preview");
   };
 
   return (
@@ -54,6 +54,12 @@ export function IntegrationSelectionStep() {
         </span>
       </div>
 
+      {!selected && (
+        <p className="col-span-full text-center font-mono text-[9px] uppercase tracking-[0.14em] text-white/28 mt-1 mb-2">
+          Choose one to continue
+        </p>
+      )}
+
       {/* Cards */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
         {/* BYO AI */}
@@ -69,9 +75,12 @@ export function IntegrationSelectionStep() {
               : "border-white/10 bg-white/[0.03] hover:border-white/20"
           )}
         >
-          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#B6F09C] mb-4">
+          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#B6F09C] mb-1">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B6F09C]" />
             BYO AI
+          </div>
+          <div className="mb-4 inline-flex items-center rounded-full border border-[#B6F09C]/30 bg-[#B6F09C]/08 px-2.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[#B6F09C]/80">
+            Recommended for first setup
           </div>
           <div className="font-display text-[22px] font-bold text-white leading-tight mb-2">
             Govern the AI you already use
@@ -106,63 +115,66 @@ export function IntegrationSelectionStep() {
           <div className="w-px flex-1 bg-white/8" />
         </div>
 
-        {/* Collective */}
-        <button
-          type="button"
-          aria-pressed={selected === "COLLECTIVE"}
-          aria-label="Keon Collective — Deliberation, not generation"
-          onClick={() => toggleCard("COLLECTIVE")}
-          className={cn(
-            "rounded-[24px] border p-7 text-left flex flex-col transition-all duration-200",
-            selected === "COLLECTIVE"
-              ? "border-[#7EE8E0]/50 bg-[linear-gradient(175deg,rgba(126,232,224,0.12)_0%,rgba(126,232,224,0.04)_60%)]"
-              : "border-[#7EE8E0]/28 bg-[linear-gradient(175deg,rgba(126,232,224,0.07)_0%,rgba(126,232,224,0.02)_60%,rgba(6,17,23,0.2)_100%)]"
-          )}
-        >
-          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#7EE8E0] mb-4">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#7EE8E0]" />
-            Keon Collective
-          </div>
-          <div className="font-display text-[22px] font-bold text-white leading-tight mb-2">
-            Deliberation, not generation
-          </div>
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[#7EE8E0]/45 mb-3">
-            For high-stakes decisions that demand more than one output
-          </div>
-          <p className="text-sm leading-[1.72] text-white/62 mb-5 flex-1">
-            Replace single-model output with a governed deliberation process. Proposals branch,
-            face adversarial challenge, converge through voting, and collapse into a
-            cryptographically sealed outcome.
-          </p>
-          <ul className="space-y-1.5 mb-5">
-            {[
-              "Branching analysis across multiple agents",
-              "Built-in adversarial challenge phase",
-              "Convergence via weighted vote",
-              "Cryptographically sealed, append-only outcome",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[12px] text-white/65 leading-[1.5]">
-                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[#7EE8E0]/45" />
-                {item}
-              </li>
-            ))}
-          </ul>
+        {/* Collective card wrapper */}
+        <div className="relative">
+          <button
+            type="button"
+            aria-pressed={selected === "COLLECTIVE"}
+            aria-label="Keon Collective — Deliberation, not generation"
+            onClick={() => toggleCard("COLLECTIVE")}
+            className={cn(
+              "w-full rounded-[24px] border p-7 pb-20 text-left flex flex-col transition-all duration-200",
+              selected === "COLLECTIVE"
+                ? "border-[#7EE8E0]/50 bg-[linear-gradient(175deg,rgba(126,232,224,0.12)_0%,rgba(126,232,224,0.04)_60%)]"
+                : "border-[#7EE8E0]/28 bg-[linear-gradient(175deg,rgba(126,232,224,0.07)_0%,rgba(126,232,224,0.02)_60%,rgba(6,17,23,0.2)_100%)]"
+            )}
+          >
+            <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#7EE8E0] mb-4">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#7EE8E0]" />
+              Keon Collective
+            </div>
+            <div className="font-display text-[22px] font-bold text-white leading-tight mb-2">
+              Deliberation, not generation
+            </div>
+            <p className="font-mono text-[10px] text-white/55 mb-1">
+              Use Keon&apos;s multi-agent review process for decisions too sensitive for one model.
+            </p>
+            <div className="mb-3 inline-flex items-center rounded-full border border-[#7EE8E0]/25 bg-[#7EE8E0]/05 px-2.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[#7EE8E0]/60">
+              Advanced · requires enablement
+            </div>
+            <p className="text-sm leading-[1.72] text-white/62 mb-5 flex-1">
+              Replace single-model output with a governed deliberation process. Proposals branch,
+              face adversarial challenge, converge through voting, and collapse into a
+              cryptographically sealed outcome.
+            </p>
+            <ul className="space-y-1.5 mb-5">
+              {[
+                "Branching analysis across multiple agents",
+                "Built-in adversarial challenge phase",
+                "Convergence via weighted vote",
+                "Cryptographically sealed, append-only outcome",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-[12px] text-white/65 leading-[1.5]">
+                  <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[#7EE8E0]/45" />
+                  {item}
+                </li>
+              ))}
+            </ul>
 
-          {/* Micro-preview */}
-          <MicroPreview />
-
-          {/* CTA */}
+            {/* Micro-preview */}
+            <MicroPreview />
+          </button>
+          {/* CTA — sibling of button, absolutely positioned to avoid invalid <a> inside <button> */}
           <a
             href={COLLECTIVE_SHOWCASE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="mt-auto inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#7EE8E0] border border-[#7EE8E0]/28 rounded-[6px] px-4 py-2 bg-[#7EE8E0]/05 hover:bg-[#7EE8E0]/11 hover:border-[#7EE8E0]/48 transition-colors"
+            className="absolute bottom-7 left-7 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#7EE8E0] border border-[#7EE8E0]/28 rounded-[6px] px-4 py-2 bg-[#7EE8E0]/05 hover:bg-[#7EE8E0]/11 hover:border-[#7EE8E0]/48 transition-colors"
           >
             Watch a decision unfold{" "}
             <span className="text-[11px]" aria-hidden>↗</span>
           </a>
-        </button>
+        </div>
       </div>
     </StepShell>
   );

@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACCESS REQUESTS — Pre-tenant form submissions (not yet a tenant)
+// A submitted request is not a tenant. Keeping these separate avoids polluting
+// the tenant table with unreviewed submissions and blurring approval semantics.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AccessRequest {
+  id           String              @id @default(cuid())
+  email        String
+  name         String?
+  organization String?
+  audience     AccessAudience      @default(BUILDER)
+  intendedUse  String?
+  status       AccessRequestStatus @default(RECEIVED)
+
+  // Review trail
+  reviewedByEmail String?
+  reviewedAt      DateTime?
+  decisionReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Link to resulting tenant (null until PROVISIONED)
+  resultingTenantId String? @unique
+  resultingTenant   Tenant? @relation("AccessRequestToTenant", fields: [resultingTenantId], references: [id])
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum AccessRequestStatus {
+  RECEIVED
+  REVIEWING
+  APPROVED
+  REJECTED
+  PROVISIONED
+}
+
+enum AccessAudience {
+  BUILDER
+  ARCHITECT
+  OPERATOR
+  ENTERPRISE
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANTS — Governed execution boundary & billing unit
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id         String       @id @default(cuid())
+  externalId String       @unique
+  name       String
+  status     TenantStatus @default(PROVISIONING)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  provisionedAt DateTime?
+  suspendedAt   DateTime?
+
+  // Extensible config — absorbs tenant-specific settings without schema churn
+  metadata Json @default("{}")
+
+  // Back-reference to originating access request (null for system-created tenants)
+  accessRequest AccessRequest? @relation("AccessRequestToTenant")
+
+  workspaces       Workspace[]
+  memberships      TenantMembership[]
+  invitations      InviteToken[]
+  provisioningRuns ProvisioningRun[]
+
+  // RetentionPolicy + LegalHold deferred to Phase 2 (ADR-0005)
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TenantStatus {
+  PROVISIONING    // Tenant record created; workspace not yet ready
+  PROVISIONED     // Workspace ready; awaiting first activation
+  ACTIVE          // User activated; workspace live
+  SUSPENDED       // Admin suspended (legal hold, abuse)
+  DEPROVISIONING  // Scheduled for deletion
+  DEPROVISIONED   // Soft-deleted
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKSPACES — Operational unit within a tenant (future: multi-workspace)
+//
+// ENVIRONMENT DISTINCTION (enforced by business logic, not just enum):
+//   SANDBOX      — must never claim live status
+//   PRODUCTION   — must never be activated via a TEST token
+//   DEMO_FIXTURE — must carry visible label; must never appear as live production
+//
+// Provisioning complete ≠ onboarding complete. onboardingStatus tracks the
+// post-provisioning setup flow separately from ProvisioningRun.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String               @id @default(cuid())
+  externalId  String
+  name        String
+  environment WorkspaceEnvironment @default(SANDBOX)
+
+  onboardingStatus      WorkspaceOnboardingStatus @default(NOT_STARTED)
+  onboardingCompletedAt DateTime?
+  onboardingVersion     String?
+  onboardingState       Json                      @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, externalId])
+  @@index([tenantId])
+  @@index([onboardingStatus])
+}
+
+enum WorkspaceEnvironment {
+  SANDBOX
+  PRODUCTION
+  DEMO_FIXTURE
+}
+
+enum WorkspaceOnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USERS — Authenticated identities; email is the stable key
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  emailVerified DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastSignInAt DateTime?
+
+  memberships TenantMembership[]
+  sentInvites InviteToken[]      @relation("InviteTokenInvitedBy")
+  identities  UserIdentity[]
+
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER IDENTITY — External auth provider bindings
+// Reserved shape so we don't paint ourselves into an email-only corner.
+// Supports Auth0 / Clerk / Azure AD / NextAuth / any OIDC provider.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model UserIdentity {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String // e.g. "email", "github", "google", "azure-ad"
+  providerSub String // Subject claim from the provider's ID token
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT MEMBERSHIP — User's role and access within a tenant
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantMembership {
+  id       String           @id @default(cuid())
+  tenantId String
+  userId   String
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role   MembershipRole   @default(MEMBER)
+  status MembershipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum MembershipRole {
+  OWNER    // Created the tenant
+  ADMIN    // Can manage team, invitations, settings
+  MEMBER   // Standard access
+  READONLY // View-only (future)
+}
+
+enum MembershipStatus {
+  ACTIVE    // Member is active
+  INVITED   // Invitation sent, pending acceptance
+  SUSPENDED // Admin suspended this member
+  INACTIVE  // Departed or soft-deleted
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVITE TOKENS — Email-based invitations for new users
+// ─────────────────────────────────────────────────────────────────────────────
+
+model InviteToken {
+  id    String @id @default(cuid())
+  token String @unique @db.Char(32)
+
+  // Who created this invite. Nullable because the first owner may be invited
+  // by the system before any user record exists.
+  createdByKind   InviteCreatorKind @default(SYSTEM)
+  invitedByUserId String?
+  invitedByUser   User?             @relation("InviteTokenInvitedBy", fields: [invitedByUserId], references: [id])
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  inviteeEmail String
+  inviteeName  String?
+  roleToGrant  MembershipRole @default(MEMBER)
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  acceptedByUserId String?
+
+  maxUses       Int @default(1)
+  usesRemaining Int // Set to 0 on first claim; never incremented
+
+  @@index([tenantId])
+  @@index([inviteeEmail])
+  @@index([expiresAt])
+}
+
+enum InviteCreatorKind {
+  SYSTEM // Generated by provisioning pipeline; no user exists yet
+  USER   // Created by an existing tenant member
+  ADMIN  // Created by a Keon internal admin
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVISIONING RUNS — Durable audit trail of tenant setup operations
+// stateHistory is append-only JSON: { state, timestamp, error? }[]
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ProvisioningRun {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  activationMode   ActivationMode   @default(INVITE)
+  activationSource ActivationSource
+
+  state        ProvisioningState  @default(INVITE_VALIDATING)
+  stateHistory Json               @default("[]")
+
+  startedByEmail String
+  startedByName  String?
+
+  status         ProvisioningStatus @default(IN_PROGRESS)
+  completedAt    DateTime?
+  failedAt       DateTime?
+  failureCode    String?
+  failureMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ActivationMode {
+  INVITE
+  TEST
+}
+
+enum ActivationSource {
+  INVITE_TOKEN
+  TEST_TOKEN
+}
+
+enum ProvisioningState {
+  INVITE_VALIDATING
+  TENANT_RESOLVING
+  TENANT_CREATING
+  MEMBERSHIP_BINDING
+  WORKSPACE_BOOTSTRAPPING
+  PROVISIONING_COMPLETE
+  PROVISIONING_FAILED
+}
+
+enum ProvisioningStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}

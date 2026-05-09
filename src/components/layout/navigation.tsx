@@ -3,6 +3,7 @@
 import {
   Activity,
   BookOpen,
+  Database,
   Home,
   KeyRound,
   Settings,
@@ -78,6 +79,17 @@ export const navigationSections: NavigationSection[] = [
         href: "/collective",
         description: "Collaborative review for high-risk decisions.",
         icon: BookOpen,
+      },
+    ],
+  },
+  {
+    title: "Platform",
+    items: [
+      {
+        label: "Cortex",
+        href: "/cortex",
+        description: "Deterministic memory and canonical context for governed AI.",
+        icon: Database,
       },
     ],
   },

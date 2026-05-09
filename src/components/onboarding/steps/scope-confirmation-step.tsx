@@ -2,13 +2,19 @@
 
 import { StepShell } from "@/components/onboarding/step-shell";
 import { Button } from "@/components/ui/button";
+import { INTERNAL_TEST_TENANT_ID } from "@/lib/activation/test-mode";
 import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
 import { useOnboardingState } from "@/lib/onboarding/store";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-type ScopeViewState = "loading" | "recoverable_failure" | "ready_to_confirm" | "confirmed";
+type ScopeViewState =
+  | "loading"
+  | "workspace_missing"
+  | "backend_unavailable"
+  | "ready_to_confirm"
+  | "confirmed";
 
 function getScopeViewState(input: {
   isLoading: boolean;
@@ -18,18 +24,10 @@ function getScopeViewState(input: {
   isConfirming: boolean;
   isRetrying: boolean;
 }): ScopeViewState {
-  if (input.isConfirming) {
-    return "confirmed";
-  }
-
-  if (input.isLoading || input.isRetrying || (input.hasTenants && !input.hasSelectedTenant)) {
-    return "loading";
-  }
-
-  if (input.isError || !input.hasTenants) {
-    return "recoverable_failure";
-  }
-
+  if (input.isConfirming) return "confirmed";
+  if (input.isLoading || input.isRetrying || (input.hasTenants && !input.hasSelectedTenant)) return "loading";
+  if (input.isError) return "backend_unavailable";
+  if (!input.hasTenants) return "workspace_missing";
   return "ready_to_confirm";
 }
 
@@ -55,10 +53,12 @@ export function ScopeConfirmationStep() {
     setEnvironment,
     confirmBinding,
     isTestMode,
+    activationMode,
   } = useTenantBinding();
   const { confirmAccess } = useOnboardingState();
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const [isSandboxFallback, setIsSandboxFallback] = React.useState(false);
 
   React.useEffect(() => {
     if (!selectedTenantId && tenants.length > 0) {
@@ -71,6 +71,16 @@ export function ScopeConfirmationStep() {
       setIsRetrying(false);
     }
   }, [isLoading, isRetrying]);
+
+  React.useEffect(() => {
+    if (!isSandboxFallback || selectedTenantId !== INTERNAL_TEST_TENANT_ID) {
+      return;
+    }
+    confirmBinding();
+    confirmAccess(INTERNAL_TEST_TENANT_ID);
+    setIsSandboxFallback(false);
+    router.replace("/setup?step=integration");
+  }, [isSandboxFallback, selectedTenantId, confirmBinding, confirmAccess, router]);
 
   const selectedTenant = tenants.find((tenant) => tenant.id === selectedTenantId) ?? null;
   const viewState = getScopeViewState({
@@ -103,26 +113,21 @@ export function ScopeConfirmationStep() {
       description="Choose the workspace and environment Keon should prepare. This determines where guardrails, receipts, and later integrations will apply."
       footer={
         viewState === "ready_to_confirm" ? (
+          <Button size="lg" onClick={() => { if (!selectedTenant) return; setIsConfirming(true); }}>
+            Confirm and continue
+          </Button>
+        ) : viewState === "workspace_missing" ? (
           <Button
             size="lg"
             onClick={() => {
-              if (!selectedTenant) {
-                return;
-              }
-
-              setIsConfirming(true);
+              selectTenant(INTERNAL_TEST_TENANT_ID);
+              setIsSandboxFallback(true);
             }}
           >
-            Confirm and continue
+            Continue with sandbox workspace
           </Button>
-        ) : viewState === "recoverable_failure" ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setIsRetrying(true);
-              retry();
-            }}
-          >
+        ) : viewState === "backend_unavailable" ? (
+          <Button variant="secondary" onClick={() => { setIsRetrying(true); retry(); }}>
             Retry
           </Button>
         ) : null
@@ -143,14 +148,29 @@ export function ScopeConfirmationStep() {
             ))}
           </div>
         </div>
-      ) : viewState === "recoverable_failure" ? (
+      ) : viewState === "workspace_missing" ? (
         <div className="space-y-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <div>
-            <div className="font-display text-2xl font-semibold text-white">We&apos;re still checking access.</div>
+            <div className="font-display text-2xl font-semibold text-white">
+              No workspace is prepared for this access link yet.
+            </div>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-              Retry in a moment. Once access details are available, you&apos;ll be able to confirm the right workspace and continue.
+              Keon accepted this access link, but could not find a prepared workspace attached to it.
+              You can continue with the Keon sandbox workspace to complete setup now, or contact your
+              Keon administrator if you expected a specific workspace to be ready.
             </p>
-            <p className="mt-3 text-sm leading-6 text-white/58">You can continue once your workspace is available.</p>
+          </div>
+        </div>
+      ) : viewState === "backend_unavailable" ? (
+        <div className="space-y-5 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+          <div>
+            <div className="font-display text-2xl font-semibold text-white">
+              Workspace access service unavailable.
+            </div>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+              Keon could not reach the workspace access service. This is usually a temporary issue.
+              Retry in a moment.
+            </p>
           </div>
         </div>
       ) : viewState === "confirmed" ? (
@@ -163,11 +183,20 @@ export function ScopeConfirmationStep() {
         </div>
       ) : (
         <div className="space-y-4">
-          {isTestMode && (
+          {isTestMode && activationMode === "test" && (
             <div className="rounded-[24px] border border-[#F4D35E]/30 bg-[#F4D35E]/10 p-6">
-              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#F4D35E]">Test activation mode</div>
+              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#F4D35E]">Internal test mode</div>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-                This internal test path is pinned to the Keon internal test workspace in sandbox. It does not represent a real invitation or tenant provisioning run.
+                This path is pinned to the Keon internal sandbox workspace and is not a real
+                provisioning run. For internal testing only.
+              </p>
+            </div>
+          )}
+          {isTestMode && activationMode !== "test" && (
+            <div className="rounded-[24px] border border-[#7EE8E0]/20 bg-[#7EE8E0]/05 p-6">
+              <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Sandbox workspace</div>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
+                Your workspace is running in sandbox mode. Changes here do not affect production systems.
               </p>
             </div>
           )}
@@ -196,6 +225,9 @@ export function ScopeConfirmationStep() {
                 );
               })}
             </div>
+            <p className="mt-3 font-mono text-[10px] text-white/38">
+              Production preparation can be enabled after sandbox validation.
+            </p>
           </div>
 
           {tenants.length === 1 ? (

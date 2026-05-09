@@ -1,6 +1,6 @@
 "use client";
 
-import { getChecklistItems, getCurrentBlocker, getReadinessLabel } from "@/lib/onboarding/experience";
+import { getChecklistItems, getCurrentBlocker, getReadinessLabel, isLifecyclePreviewInterlude } from "@/lib/onboarding/experience";
 import { useOnboardingState } from "@/lib/onboarding/store";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle, Clock3 } from "lucide-react";
@@ -69,6 +69,21 @@ export function SetupChecklist() {
           );
         })}
       </div>
+
+      {isLifecyclePreviewInterlude(state) && (
+        <div className="space-y-3">
+          <div className="font-mono text-xs uppercase tracking-[0.24em] text-white/55">In progress</div>
+          <div className="flex items-start gap-3 rounded-[18px] border border-[#7EE8E0]/30 bg-[#7EE8E0]/08 p-4">
+            <Clock3 className="mt-0.5 h-4 w-4 text-[#7EE8E0]" />
+            <div className="space-y-1">
+              <div className="font-medium text-white">Reviewing governance lifecycle</div>
+              <div className="text-sm leading-6 text-white/65">
+                See how Keon governs decisions before setting guardrails.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="font-mono text-xs uppercase tracking-[0.24em] text-white/55">Optional next</div>

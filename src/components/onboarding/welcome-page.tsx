@@ -9,15 +9,30 @@ export function WelcomePage() {
   const { startSetup } = useOnboardingState();
 
   return (
-    <div className="space-y-10">
-      <div className="space-y-4 border-b border-white/10 pb-8">
+    <div className="space-y-8">
+      {/* Hero + top CTA */}
+      <div className="border-b border-white/10 pb-8">
         <div className="font-mono text-xs uppercase tracking-[0.26em] text-[#7EE8E0]">Welcome</div>
-        <h1 className="max-w-4xl font-display text-5xl font-semibold leading-tight text-white sm:text-6xl">
+        <h1 className="mt-3 max-w-4xl font-display text-5xl font-semibold leading-tight text-white sm:text-6xl">
           Keon Control makes AI-driven work accountable before it reaches your systems.
         </h1>
-        <p className="max-w-3xl text-lg leading-8 text-white/72">
+        <p className="mt-4 max-w-3xl text-lg leading-8 text-white/72">
           Keon ensures important AI-driven actions in your environment are authorized, traceable, and reviewable before they happen. Let&apos;s get your workspace ready.
         </p>
+        <p className="mt-3 font-mono text-xs text-white/42">
+          If a page shows sample data, Keon will say so — no implied live data.
+        </p>
+        <div className="mt-6">
+          <Button
+            size="lg"
+            onClick={() => {
+              startSetup();
+              router.push("/setup?step=goals");
+            }}
+          >
+            Set up workspace
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
@@ -68,18 +83,6 @@ export function WelcomePage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button
-          size="lg"
-          onClick={() => {
-            startSetup();
-            router.push("/setup?step=goals");
-          }}
-        >
-          Set up workspace
-        </Button>
       </div>
     </div>
   );
