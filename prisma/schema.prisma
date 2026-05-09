@@ -279,6 +279,12 @@ model ProvisioningRun {
   startedByEmail String
   startedByName  String?
 
+  // SHA-256 of the raw activation token. Raw tokens are never persisted — see ADR-0005.
+  // Used for idempotency: resolveActivationToken() looks up an existing run by (hash, mode).
+  // Composite unique rather than field-level: the same raw token can legitimately produce
+  // separate runs for INVITE vs TEST modes (mirrors the old in-memory idempotency check).
+  activationTokenHash String?
+
   status         ProvisioningStatus @default(IN_PROGRESS)
   completedAt    DateTime?
   failedAt       DateTime?
@@ -288,6 +294,7 @@ model ProvisioningRun {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([activationTokenHash, activationMode])
   @@index([tenantId])
   @@index([status])
   @@index([createdAt])
