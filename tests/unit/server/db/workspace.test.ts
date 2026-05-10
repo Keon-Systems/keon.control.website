@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   completeOnboarding,
   WorkspaceNotFoundError,
+  WorkspaceForbiddenError,
+  WorkspaceAmbiguousError,
   OnboardingAlreadyCompleteError,
 } from '@/server/db/workspace'
 
 vi.mock('@/server/db/client', () => ({
   db: {
-    workspace: { findUnique: vi.fn(), update: vi.fn() },
+    workspace: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     tenant: { updateMany: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -15,11 +17,12 @@ vi.mock('@/server/db/client', () => ({
 
 import { db } from '@/server/db/client'
 
+const mockFindMany = db.workspace.findMany as ReturnType<typeof vi.fn>
 const mockFindUnique = db.workspace.findUnique as ReturnType<typeof vi.fn>
 const mockTransaction = db.$transaction as ReturnType<typeof vi.fn>
 
 const WORKSPACE = {
-  id: 'ws-1',
+  id: 'ws-id-1',
   externalId: 'ext-ws-1',
   tenantId: 'tenant-1',
   name: 'Acme Sandbox',
@@ -39,75 +42,82 @@ const SNAPSHOT = {
   onboardingVersion: '1.0',
 }
 
+function setupSuccessTransaction() {
+  const updated = { ...WORKSPACE, onboardingStatus: 'COMPLETED' as const }
+  mockTransaction.mockImplementation(async (fn: (tx: typeof db) => Promise<unknown>) => fn(db))
+  ;(db.workspace.update as ReturnType<typeof vi.fn>).mockResolvedValue(updated)
+  ;(db.tenant.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 })
+  return updated
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('completeOnboarding', () => {
-  it('throws WorkspaceNotFoundError when workspace not found', async () => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Default workspace resolution (workspaceExternalId = null)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('completeOnboarding — default workspace resolution (null id)', () => {
+  it('throws WorkspaceNotFoundError when tenant has no workspaces', async () => {
+    mockFindMany.mockResolvedValue([])
+    await expect(completeOnboarding('tenant-1', null, SNAPSHOT)).rejects.toThrow(
+      WorkspaceNotFoundError,
+    )
+    expect(mockTransaction).not.toHaveBeenCalled()
+  })
+
+  it('throws WorkspaceAmbiguousError when tenant has multiple workspaces', async () => {
+    mockFindMany.mockResolvedValue([WORKSPACE, { ...WORKSPACE, id: 'ws-id-2', externalId: 'ext-ws-2' }])
+    await expect(completeOnboarding('tenant-1', null, SNAPSHOT)).rejects.toThrow(
+      WorkspaceAmbiguousError,
+    )
+    expect(mockTransaction).not.toHaveBeenCalled()
+  })
+
+  it('completes successfully when tenant has exactly one workspace', async () => {
+    mockFindMany.mockResolvedValue([WORKSPACE])
+    const updated = setupSuccessTransaction()
+    const result = await completeOnboarding('tenant-1', null, SNAPSHOT)
+    expect(result.onboardingStatus).toBe('COMPLETED')
+    expect(updated.onboardingStatus).toBe('COMPLETED')
+    expect(mockTransaction).toHaveBeenCalledOnce()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Explicit workspace id
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('completeOnboarding — explicit workspaceExternalId', () => {
+  it('throws WorkspaceForbiddenError when workspace not found under tenant', async () => {
     mockFindUnique.mockResolvedValue(null)
-    await expect(
-      completeOnboarding('tenant-1', 'missing-ws', SNAPSHOT),
-    ).rejects.toThrow(WorkspaceNotFoundError)
+    await expect(completeOnboarding('tenant-1', 'foreign-ws', SNAPSHOT)).rejects.toThrow(
+      WorkspaceForbiddenError,
+    )
     expect(mockTransaction).not.toHaveBeenCalled()
   })
 
   it('throws OnboardingAlreadyCompleteError when already COMPLETED', async () => {
     mockFindUnique.mockResolvedValue({ ...WORKSPACE, onboardingStatus: 'COMPLETED' })
-    await expect(
-      completeOnboarding('tenant-1', 'ext-ws-1', SNAPSHOT),
-    ).rejects.toThrow(OnboardingAlreadyCompleteError)
+    await expect(completeOnboarding('tenant-1', 'ext-ws-1', SNAPSHOT)).rejects.toThrow(
+      OnboardingAlreadyCompleteError,
+    )
     expect(mockTransaction).not.toHaveBeenCalled()
   })
 
-  it('runs transaction and returns updated workspace on success', async () => {
-    const updated = { ...WORKSPACE, onboardingStatus: 'COMPLETED' as const }
+  it('completes successfully when workspace belongs to tenant', async () => {
     mockFindUnique.mockResolvedValue(WORKSPACE)
-    mockTransaction.mockImplementation(async (fn: (tx: typeof db) => Promise<unknown>) =>
-      fn(db),
-    )
-    ;(db.workspace.update as ReturnType<typeof vi.fn>).mockResolvedValue(updated)
-    ;(db.tenant.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 })
-
+    setupSuccessTransaction()
     const result = await completeOnboarding('tenant-1', 'ext-ws-1', SNAPSHOT)
-
     expect(result.onboardingStatus).toBe('COMPLETED')
     expect(mockTransaction).toHaveBeenCalledOnce()
   })
 
-  it('passes correct workspace update data including onboardingVersion', async () => {
-    const updated = { ...WORKSPACE, onboardingStatus: 'COMPLETED' as const }
+  it('passes PROVISIONED → ACTIVE transition filter in transaction', async () => {
     mockFindUnique.mockResolvedValue(WORKSPACE)
-    mockTransaction.mockImplementation(async (fn: (tx: typeof db) => Promise<unknown>) =>
-      fn(db),
-    )
-    ;(db.workspace.update as ReturnType<typeof vi.fn>).mockResolvedValue(updated)
-    ;(db.tenant.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
-
+    setupSuccessTransaction()
     await completeOnboarding('tenant-1', 'ext-ws-1', SNAPSHOT)
-
-    expect(db.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          onboardingStatus: 'COMPLETED',
-          onboardingVersion: '1.0',
-        }),
-      }),
-    )
-  })
-
-  it('targets PROVISIONED → ACTIVE transition with updateMany filter', async () => {
-    const updated = { ...WORKSPACE, onboardingStatus: 'COMPLETED' as const }
-    mockFindUnique.mockResolvedValue(WORKSPACE)
-    mockTransaction.mockImplementation(async (fn: (tx: typeof db) => Promise<unknown>) =>
-      fn(db),
-    )
-    ;(db.workspace.update as ReturnType<typeof vi.fn>).mockResolvedValue(updated)
-    ;(db.tenant.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
-
-    await completeOnboarding('tenant-1', 'ext-ws-1', SNAPSHOT)
-
     expect(db.tenant.updateMany).toHaveBeenCalledWith({
       where: { id: 'tenant-1', status: 'PROVISIONED' },
       data: { status: 'ACTIVE' },

@@ -10,6 +10,8 @@ import {
 import {
   completeOnboarding,
   OnboardingAlreadyCompleteError,
+  WorkspaceAmbiguousError,
+  WorkspaceForbiddenError,
   WorkspaceNotFoundError,
   type OnboardingSnapshot,
 } from '@/server/db/workspace'
@@ -19,14 +21,17 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface CompleteOnboardingBody {
-  workspaceId: string
+  workspaceId?: string // optional — omit to resolve single default workspace
   snapshot: OnboardingSnapshot
 }
 
 function isValidBody(body: unknown): body is CompleteOnboardingBody {
   if (typeof body !== 'object' || body === null) return false
   const b = body as Record<string, unknown>
-  if (typeof b.workspaceId !== 'string' || b.workspaceId.trim() === '') return false
+  // workspaceId is optional; if present must be a non-empty string
+  if ('workspaceId' in b && (typeof b.workspaceId !== 'string' || b.workspaceId.trim() === '')) {
+    return false
+  }
   if (typeof b.snapshot !== 'object' || b.snapshot === null) return false
   const s = b.snapshot as Record<string, unknown>
   if (!Array.isArray(s.selectedGoals)) return false
@@ -35,7 +40,7 @@ function isValidBody(body: unknown): body is CompleteOnboardingBody {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SESSION ACCESSOR
-// Extracted as a const so tests can override via vi.spyOn or module mocking.
+// Extracted as a named export so tests can override via vi.spyOn.
 // Replace with getIronSession(req, res, sessionOptions) when auth is wired.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -48,9 +53,22 @@ export function getSession(_req: NextRequest): KeonSession | null {
 // ROUTE
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * POST /api/onboarding/complete
+ *
+ * Marks a workspace's onboarding as complete and transitions the tenant to ACTIVE.
+ * Session-guarded via getSessionMembership (KEO-11).
+ *
+ * Workspace resolution:
+ *   - No workspaceId in body → resolve tenant's single default workspace (409 if ambiguous)
+ *   - workspaceId provided    → must belong to session tenant, else 403
+ *
+ * Returns 401 until iron-session auth is wired. This is intentional, not a bug.
+ * The CompleteStep UI calls this as fire-and-forget and does not block on the response.
+ * Onboarding persistence is best-effort until real auth/session wiring exists;
+ * a 200 from this endpoint is not required for the UI redirect to proceed.
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Session guard — resolves tenant from authenticated session.
-  // Returns 401 until iron-session auth is wired (intentional, not a bug).
   const session = getSession(req)
 
   let membership: Awaited<ReturnType<typeof getSessionMembership>>
@@ -76,15 +94,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (!isValidBody(body)) {
     return NextResponse.json(
-      { error: 'workspaceId (string) and snapshot.selectedGoals (array) are required' },
+      { error: 'snapshot.selectedGoals (array) is required; workspaceId must be a non-empty string if provided' },
       { status: 400 },
     )
   }
 
+  // null = resolve default workspace; string = explicit lookup
+  const workspaceExternalId = body.workspaceId ?? null
+
   try {
     const workspace = await completeOnboarding(
       membership.tenantId,
-      body.workspaceId,
+      workspaceExternalId,
       body.snapshot,
     )
 
@@ -97,7 +118,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (err instanceof WorkspaceNotFoundError) {
       return NextResponse.json({ error: err.message }, { status: 404 })
     }
-    if (err instanceof OnboardingAlreadyCompleteError) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: 403 })
+    }
+    if (err instanceof WorkspaceAmbiguousError || err instanceof OnboardingAlreadyCompleteError) {
       return NextResponse.json({ error: err.message }, { status: 409 })
     }
     throw err

@@ -28,16 +28,26 @@ export function CompleteStep() {
   } = useOnboardingState();
 
   const recordCompletion = useCallback(async () => {
-    // Fire-and-forget: persists onboarding completion to DB via session-guarded
-    // endpoint. Returns 401 until iron-session auth is wired — does not block UX.
+    // BEST-EFFORT: Persists onboarding completion to DB via POST /api/onboarding/complete.
+    // This call is fire-and-forget. The UI redirect to /integrations happens regardless
+    // of whether this succeeds. A successful redirect is NOT proof that DB persistence
+    // occurred — that only happens once iron-session auth is wired and the session guard
+    // resolves a real tenant context. Until then the endpoint returns 401 and the DB
+    // record is not written. When auth lands, replace this with an awaited call that
+    // gates the redirect on a successful 200 response.
     try {
+      // Omit workspaceId when null — the endpoint will resolve the tenant's single
+      // default workspace automatically. If the tenant has multiple workspaces, the
+      // endpoint returns 409 and the call fails silently (acceptable for now).
+      const payload: Record<string, unknown> = {
+        snapshot: { selectedGoals, guardrailPreset, selectedIntegrationMode },
+      };
+      if (workspaceId) payload.workspaceId = workspaceId;
+
       await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspaceId: workspaceId ?? "",
-          snapshot: { selectedGoals, guardrailPreset, selectedIntegrationMode },
-        }),
+        body: JSON.stringify(payload),
       });
     } catch {
       // Network errors are intentionally swallowed; completion is non-blocking.
