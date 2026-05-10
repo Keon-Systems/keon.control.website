@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { StepShell } from "@/components/onboarding/step-shell";
 import { Button } from "@/components/ui/button";
 import { useTenantBinding } from "@/lib/control-plane/tenant-binding";
@@ -22,19 +23,37 @@ export function CompleteStep() {
   const router = useRouter();
   const { confirmedTenant, confirmedEnvironment } = useTenantBinding();
   const {
-    state: { selectedGoals, guardrailPreset, selectedIntegrationMode },
+    state: { selectedGoals, guardrailPreset, selectedIntegrationMode, workspaceId },
     finishOnboarding,
   } = useOnboardingState();
+
+  const recordCompletion = useCallback(async () => {
+    // Fire-and-forget: persists onboarding completion to DB via session-guarded
+    // endpoint. Returns 401 until iron-session auth is wired — does not block UX.
+    try {
+      await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId: workspaceId ?? "",
+          snapshot: { selectedGoals, guardrailPreset, selectedIntegrationMode },
+        }),
+      });
+    } catch {
+      // Network errors are intentionally swallowed; completion is non-blocking.
+    }
+  }, [workspaceId, selectedGoals, guardrailPreset, selectedIntegrationMode]);
 
   return (
     <StepShell
       eyebrow="Basic setup complete"
-      title="Workspace prepared."
-      description="Keon knows what to protect, which workspace to prepare, and which guardrails to apply. Connect your first integration to start governing AI actions in this workspace."
+      title="Setup choices confirmed."
+      description="Keon has your workspace binding, primary goal, operating model, and starter guardrails for this browser session. Connect your first integration to begin live governance in this workspace."
       footer={
         <Button
           size="lg"
-          onClick={() => {
+          onClick={async () => {
+            void recordCompletion();
             finishOnboarding();
             router.replace("/integrations");
           }}
