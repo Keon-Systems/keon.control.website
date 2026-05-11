@@ -1,24 +1,24 @@
-import Stripe from "stripe";
 import { INTERNAL_TEST_TENANT, buildInternalTestUsageSummary } from "@/lib/activation/test-mode";
 import type { ApiEnvelope, ApiKeyPreview, BillingSummary, MeResponse, Tenant, UsageSummary } from "@/lib/api/types";
 import {
-  type BillingProjectionRecord,
-  type BillingSessionRecord,
-  getBillingProjectionRecord,
-  getBillingSessionRecord,
-  getMeRecord,
-  getUsageSummaryRecord,
-  hasWebhookEventRecord,
-  isPostgresEnabled,
-  listApiKeyRecords,
-  listTenantRecords,
-  saveBillingSessionRecord,
-  saveWebhookEventRecord,
-  updateMePlanRecord,
-  updateTenantPlanRecord,
-  upsertBillingProjectionRecord,
+    type BillingProjectionRecord,
+    type BillingSessionRecord,
+    getBillingProjectionRecord,
+    getBillingSessionRecord,
+    getMeRecord,
+    getUsageSummaryRecord,
+    hasWebhookEventRecord,
+    isPostgresEnabled,
+    listApiKeyRecords,
+    listTenantRecords,
+    saveBillingSessionRecord,
+    saveWebhookEventRecord,
+    updateMePlanRecord,
+    updateTenantPlanRecord,
+    upsertBillingProjectionRecord,
 } from "@/lib/server/control-plane-db";
 import { getStripeClient, getStripePriceId, getStripeWebhookSecret, isStripeEnabled, planCodeFromPriceId } from "@/lib/server/stripe";
+import Stripe from "stripe";
 
 type PlanCode = "builder" | "startup" | "growth" | "enterprise";
 type BillingState = "trialing" | "active" | "past_due" | "unpaid" | "canceled" | "suspended";
@@ -37,6 +37,13 @@ interface MemoryState {
   billing: Record<string, BillingProjectionRecord>;
   sessions: Record<string, BillingSessionRecord>;
   webhooks: Record<string, StripeWebhookRecord>;
+}
+
+export class ControlPlaneInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ControlPlaneInputError";
+  }
 }
 
 const planCatalog: Record<PlanCode, { name: string; monthlyPriceUsd: number; includedExecutions: number; overageRateUsd: number }> = {
@@ -211,6 +218,23 @@ function sameOriginAbsoluteUrl(path: string) {
   return new URL(path, origin).toString();
 }
 
+function requireAppReturnUrl(url: string) {
+  const appOrigin = new URL(process.env.NEXT_PUBLIC_APP_ORIGIN || "http://localhost:3000");
+
+  let resolved: URL;
+  try {
+    resolved = new URL(url, appOrigin);
+  } catch {
+    throw new ControlPlaneInputError("Billing return URLs must stay on the configured app origin");
+  }
+
+  if ((resolved.protocol !== "http:" && resolved.protocol !== "https:") || resolved.origin !== appOrigin.origin) {
+    throw new ControlPlaneInputError("Billing return URLs must stay on the configured app origin");
+  }
+
+  return resolved.toString();
+}
+
 async function meRecord() {
   return isPostgresEnabled() ? getMeRecord() : memoryState().me;
 }
@@ -336,6 +360,9 @@ export async function createCheckoutSession(input: { tenantId: string; planCode:
     throw new Error("Checkout is only supported for self-serve paid plans");
   }
 
+  const successUrl = requireAppReturnUrl(input.successUrl);
+  const cancelUrl = requireAppReturnUrl(input.cancelUrl);
+
   if (isStripeEnabled()) {
     const customerId = await ensureStripeCustomer(input.tenantId);
     const priceId = getStripePriceId(input.planCode);
@@ -346,15 +373,15 @@ export async function createCheckoutSession(input: { tenantId: string; planCode:
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: input.successUrl,
-      cancel_url: input.cancelUrl,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: { tenant_id: input.tenantId, plan_code: input.planCode },
       subscription_data: { metadata: { tenant_id: input.tenantId, plan_code: input.planCode } },
       allow_promotion_codes: false,
     });
 
     return {
-      checkout_url: session.url ?? input.cancelUrl,
+      checkout_url: session.url ?? cancelUrl,
       session_id: session.id,
       provider: "stripe" as const,
     };
@@ -367,7 +394,7 @@ export async function createCheckoutSession(input: { tenantId: string; planCode:
     kind: "checkout",
     planCode: input.planCode,
     state: "created",
-    returnUrl: input.successUrl,
+    returnUrl: successUrl,
     createdAt: nowIso(),
   };
 
@@ -387,13 +414,15 @@ export async function createCheckoutSession(input: { tenantId: string; planCode:
 export async function createPortalSession(input: { tenantId: string; returnUrl: string }) {
   if (!(await hasBillingRole())) throw new Error("Forbidden");
 
+  const returnUrl = requireAppReturnUrl(input.returnUrl);
+
   if (isStripeEnabled()) {
     const customerId = await ensureStripeCustomer(input.tenantId);
     if (!customerId) throw new Error("Stripe customer is not configured");
     const stripe = getStripeClient();
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: input.returnUrl,
+      return_url: returnUrl,
     });
     return {
       portal_url: session.url,
@@ -408,7 +437,7 @@ export async function createPortalSession(input: { tenantId: string; returnUrl: 
     tenantId: input.tenantId,
     kind: "portal",
     state: "created",
-    returnUrl: input.returnUrl,
+    returnUrl: returnUrl,
     createdAt: nowIso(),
   };
 

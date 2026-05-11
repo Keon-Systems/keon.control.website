@@ -114,6 +114,26 @@ describe("control-plane service", () => {
     expect(session.portal_url).toContain("/billing/portal");
   });
 
+  it("rejects cross-origin and non-http billing return URLs", async () => {
+    const mod = await import("@/lib/server/control-plane");
+
+    await expect(
+      mod.createCheckoutSession({
+        tenantId: "ten_keon_builder",
+        planCode: "startup",
+        successUrl: "https://evil.example/billing/success",
+        cancelUrl: "http://localhost:3000/billing/cancel",
+      }),
+    ).rejects.toThrow("Billing return URLs must stay on the configured app origin");
+
+    await expect(
+      mod.createPortalSession({
+        tenantId: "ten_keon_builder",
+        returnUrl: "javascript:alert(1)",
+      }),
+    ).rejects.toThrow("Billing return URLs must stay on the configured app origin");
+  });
+
   it("rejects unsupported self-serve plans for checkout", async () => {
     const mod = await import("@/lib/server/control-plane");
 
@@ -150,6 +170,8 @@ describe("control-plane service", () => {
       expect.objectContaining({
         customer: "cus_123",
         line_items: [{ price: "price_startup", quantity: 1 }],
+        success_url: "http://localhost:3000/billing/success",
+        cancel_url: "http://localhost:3000/billing/cancel",
       }),
     );
     expect(portalCreate).toHaveBeenCalledWith(
