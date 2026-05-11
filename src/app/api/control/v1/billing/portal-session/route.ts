@@ -1,5 +1,5 @@
+import { ControlPlaneInputError, createPortalSession } from "@/lib/server/control-plane";
 import { NextRequest, NextResponse } from "next/server";
-import { createPortalSession } from "@/lib/server/control-plane";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
   try {
     return NextResponse.json(await createPortalSession({ tenantId, returnUrl }), { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Portal session failed" }, { status: 403 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Portal session failed" },
+      { status: error instanceof ControlPlaneInputError ? 400 : 403 },
+    );
   }
 }

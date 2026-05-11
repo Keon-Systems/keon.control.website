@@ -12,8 +12,10 @@ const parseStripeEvent = vi.fn();
 const verifyAndParseStripeWebhook = vi.fn();
 const isStripeEnabled = vi.fn();
 const getStripeWebhookSecret = vi.fn();
+class ControlPlaneInputError extends Error {}
 
 vi.mock("@/lib/server/control-plane", () => ({
+  ControlPlaneInputError,
   createCheckoutSession,
   createPortalSession,
   getBillingSummary,
@@ -67,6 +69,19 @@ describe("control API routes", () => {
     expect(okResponse.status).toBe(200);
     await expect(okResponse.json()).resolves.toEqual({ checkout_url: "https://checkout", session_id: "cs_1", provider: "mock" });
 
+    createCheckoutSession.mockRejectedValueOnce(new ControlPlaneInputError("Billing return URLs must stay on the configured app origin"));
+    const invalidResponse = await route.POST(new NextRequest("http://localhost/api/control/v1/billing/checkout-session", {
+      method: "POST",
+      body: JSON.stringify({
+        tenant_id: "ten_1",
+        plan_code: "startup",
+        success_url: "https://evil.example/billing/success",
+        cancel_url: "http://localhost/billing/cancel",
+      }),
+    }));
+    expect(invalidResponse.status).toBe(400);
+    await expect(invalidResponse.json()).resolves.toEqual({ error: "Billing return URLs must stay on the configured app origin" });
+
     createCheckoutSession.mockRejectedValueOnce(new Error("Forbidden"));
     const errorResponse = await route.POST(new NextRequest("http://localhost/api/control/v1/billing/checkout-session", {
       method: "POST",
@@ -96,6 +111,14 @@ describe("control API routes", () => {
     }));
     expect(okResponse.status).toBe(200);
     await expect(okResponse.json()).resolves.toEqual({ portal_url: "https://portal", session_id: "bps_1", provider: "mock" });
+
+    createPortalSession.mockRejectedValueOnce(new ControlPlaneInputError("Billing return URLs must stay on the configured app origin"));
+    const invalidPortalResponse = await route.POST(new NextRequest("http://localhost/api/control/v1/billing/portal-session", {
+      method: "POST",
+      body: JSON.stringify({ tenant_id: "ten_1", return_url: "https://evil.example/admin/subscription" }),
+    }));
+    expect(invalidPortalResponse.status).toBe(400);
+    await expect(invalidPortalResponse.json()).resolves.toEqual({ error: "Billing return URLs must stay on the configured app origin" });
   });
 
   it("validates tenantId for summary and api-key routes", async () => {
