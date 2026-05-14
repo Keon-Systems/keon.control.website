@@ -47,7 +47,7 @@ const PROOF_SPINE = [
   ["I1", "Deterministic memory / core proof summary", "cortex proof", "Verify temporal memory commitments and the byte-identical core proof output."],
   ["I2", "Tenant isolation", "cortex tenant-isolation-proof", "Reject missing, aliased, empty, and foreign tenant paths before memory can cross scope."],
   ["I3", "Replay / outbox durability", "cortex replay-proof", "Inspect durable leasing, replay, restart, retry, and no-lost-write behavior."],
-  ["I4", "Authoritative store / derivative index", "cortex authority-proof", "The vector index is derivative. The document store is authoritative. The vector surface is disposable and replayable."],
+  ["I4", "Authoritative store / derivative index", "cortex authority-proof", "Confirm the vector surface is disposable while canonical truth remains authoritative."],
   ["I5", "Deterministic shard identity / idempotent ingestion", "cortex shard-identity-proof", "Check canonical shard identity, retry safety, and duplicate suppression."],
   ["I6", "Decay & reinforcement", "cortex decay-reinforcement-proof", "Review trust floors, ceilings, reinforcement semantics, and deterministic decay behavior."],
   ["I7", "Governed signing / Evidence Pack integrity", "cortex governed-signing-proof", "Validate Ed25519 signing, tamper detection, and historical-key verification coverage."],
@@ -71,23 +71,6 @@ const ARTIFACT_REGISTRY = [
 const MODE_BOUNDARY = [
   ["Open core", "Unsigned open-core receipts remain allowed where governed signing is not enforced."],
   ["Governed mode", "Ed25519 signing, revoked/retired key handling, and Evidence Pack verification activate when governed signing is enabled."],
-] as const;
-
-const MARKET_CONTRAST = [
-  ["Recall", "correctness", "Most memory systems optimize recall. Cortex optimizes correctness."],
-  ["Context retrieval", "memory lineage", "Most memory systems retrieve context. Cortex proves memory lineage."],
-  ["Index trust", "index disposal", "Most memory systems trust their indexes. Cortex treats indexes as disposable derivatives."],
-  ["After-the-fact logs", "deterministic proof artifacts", "Most memory systems log after the fact. Cortex emits deterministic proof artifacts you can verify."],
-] as const;
-
-const CRYPTOGRAPHIC_MOAT = [
-  ["Ed25519 signing", "Governed mode signs receipts with Ed25519."],
-  ["Valid signature acceptance", "Verifier accepts valid signatures."],
-  ["Tamper rejection", "Verifier rejects tampered receipt payloads."],
-  ["Revoked key rejection", "Verifier rejects signatures from revoked keys."],
-  ["Retired key acceptance", "Verifier accepts signatures from retired historical keys."],
-  ["Deterministic Evidence Pack", "Manifest/hash tree is deterministic and tamper-detectable."],
-  ["Proof bundle composition", "Governed signing composes into the unified proof bundle as I7."],
 ] as const;
 
 const MEMORY_CONTEXT =
@@ -252,46 +235,6 @@ export default function CortexPage() {
             <Card>
               <CardContent className="font-mono text-sm leading-7 text-[#C5C6C7] opacity-85">{MEMORY_CONTEXT}</CardContent>
             </Card>
-            <div className="mt-4 border-l-2 border-[#66FCF1] py-2 pl-4">
-              <p className="font-mono text-sm leading-7 text-[#C5C6C7]">
-                <span className="text-[#66FCF1]">Verdict:</span> Cortex leads on durability/replay proof. Transactional outbox, leasing, replay proofs, idempotence, and byte-identical artifacts are not the normal pitch in this market.
-              </p>
-            </div>
-          </PageSection>
-
-          <PageSection title="Market contrast" description="Most memory systems optimize recall. Cortex optimizes correctness.">
-            <div className="grid gap-4 md:grid-cols-2">
-              {MARKET_CONTRAST.map(([from, to, body]) => (
-                <Card key={from}>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/50">
-                      <span>{from}</span>
-                      <span className="text-[#66FCF1]">→</span>
-                      <span className="text-[#66FCF1]">{to}</span>
-                    </div>
-                    <p className="font-mono text-sm leading-6 text-[#C5C6C7] opacity-80">{body}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </PageSection>
-
-          <PageSection title="Cryptographic auditability" description="The commercial moat is audit infrastructure.">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {CRYPTOGRAPHIC_MOAT.map(([label, body]) => (
-                <Card key={label}>
-                  <CardContent className="space-y-3">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#66FCF1]">{label}</div>
-                    <p className="font-mono text-sm leading-6 text-[#C5C6C7] opacity-80">{body}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="mt-4 border-l-2 border-[#66FCF1] py-2 pl-4">
-              <p className="font-mono text-sm leading-7 text-[#C5C6C7]">
-                <span className="text-[#66FCF1]">Verdict:</span> Cortex leads on cryptographic auditability. Ed25519 signing, tamper rejection, revoked key rejection, retired key acceptance, deterministic Evidence Pack manifest/hash tree, and proof bundle composition are not memory features. They are audit infrastructure.
-              </p>
-            </div>
           </PageSection>
 
           <PageSection title="Open-core vs governed boundary" description="Governed signing is additive, not a prerequisite for open-core receipts.">

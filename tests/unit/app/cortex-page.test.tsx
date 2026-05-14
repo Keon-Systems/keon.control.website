@@ -48,17 +48,6 @@ describe("CortexPage", () => {
     expect(screen.getAllByText(/cortex proof/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/cortex benchmark/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/proving memory correctness under failure, tenancy, replay, indexing drift, trust decay, and governed audit/i)).toBeInTheDocument();
-    expect(screen.getByText(/cortex leads on durability\/replay proof/i)).toBeInTheDocument();
-    expect(screen.getByText(/transactional outbox, leasing, replay proofs, idempotence, and byte-identical artifacts are not the normal pitch in this market/i)).toBeInTheDocument();
-    expect(screen.getByText(/most memory systems optimize recall\. cortex optimizes correctness\./i)).toBeInTheDocument();
-    expect(screen.getByText(/most memory systems retrieve context\. cortex proves memory lineage\./i)).toBeInTheDocument();
-    expect(screen.getByText(/most memory systems trust their indexes\. cortex treats indexes as disposable derivatives\./i)).toBeInTheDocument();
-    expect(screen.getByText(/most memory systems log after the fact\. cortex emits deterministic proof artifacts you can verify\./i)).toBeInTheDocument();
-    expect(screen.getByText(/the commercial moat is audit infrastructure/i)).toBeInTheDocument();
-    expect(screen.getByText(/ed25519 signing/i)).toBeInTheDocument();
-    expect(screen.getByText(/tamper rejection/i)).toBeInTheDocument();
-    expect(screen.getByText(/revoked key rejection/i)).toBeInTheDocument();
-    expect(screen.getByText(/cortex leads on cryptographic auditability/i)).toBeInTheDocument();
     expect(screen.getByText(/unsigned open-core receipts remain allowed/i)).toBeInTheDocument();
     expect(screen.getByText(/governed signing \/ evidence pack integrity/i)).toBeInTheDocument();
   });
