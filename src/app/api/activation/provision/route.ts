@@ -105,20 +105,20 @@ function buildInviteActivationContext(): ActivationContextSummary {
   };
 }
 
-function isSandboxFallbackAllowed(): boolean {
-  return process.env.KEON_INVITE_ALLOW_SANDBOX_FALLBACK === "true";
+function isLocalSandboxSeedAllowed(): boolean {
+  return !isProductionEnvironment() && process.env.KEON_INVITE_ALLOW_SANDBOX_FALLBACK === "true";
 }
 
-function buildSandboxFallbackActivationContext(): ActivationContextSummary {
+function buildLocalSandboxSeedActivationContext(): ActivationContextSummary {
   return {
     mode: "invite",
-    source: "sandbox_fallback",
+    source: "local_sandbox_seed",
     tenantId: INTERNAL_TEST_TENANT_ID,
     tenantName: INTERNAL_TEST_WORKSPACE_NAME,
     workspaceId: INTERNAL_TEST_TENANT_ID,
     workspaceName: INTERNAL_TEST_WORKSPACE_NAME,
     environment: "sandbox",
-    uiLabel: "Sandbox workspace fallback",
+    uiLabel: "Local sandbox seed",
   };
 }
 
@@ -139,9 +139,12 @@ function buildActivationFromRun(run: SafeProvisioningRun): ActivationContextSumm
   if (run.activationMode === "TEST") {
     return INTERNAL_TEST_ACTIVATION;
   }
-  // INVITE + TEST_TOKEN = sandbox_fallback (KEO-9 maps sandbox_fallback → TEST_TOKEN)
+  // INVITE + TEST_TOKEN = local_sandbox_seed (mapped through TEST_TOKEN in Prisma)
   if (run.activationSource === "TEST_TOKEN") {
-    return buildSandboxFallbackActivationContext();
+    if (isProductionEnvironment()) {
+      return buildInviteActivationContext();
+    }
+    return buildLocalSandboxSeedActivationContext();
   }
   // INVITE + INVITE_TOKEN
   return buildInviteActivationContext();
@@ -232,7 +235,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       activation = buildInviteActivationContext();
 
       if (!activation.tenantId || !activation.workspaceId) {
-        if (!isSandboxFallbackAllowed()) {
+        if (!isLocalSandboxSeedAllowed()) {
           return NextResponse.json(
             {
               error: "invite_workspace_missing",
@@ -241,7 +244,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             { status: 409 }
           );
         }
-        activation = buildSandboxFallbackActivationContext();
+        activation = buildLocalSandboxSeedActivationContext();
       }
     }
 

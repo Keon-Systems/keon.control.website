@@ -19,7 +19,7 @@ export type ProvisioningInternalState =
 
 export type ActivationMode = "invite" | "test";
 
-export type ActivationSource = "invite_token" | "test_token";
+export type ActivationSource = "invite_token" | "test_token" | "local_sandbox_seed";
 
 export interface ActivationContextSummary {
   mode: ActivationMode;

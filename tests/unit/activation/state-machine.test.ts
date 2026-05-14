@@ -26,7 +26,7 @@ describe("deriveProvisioningState — user step labels", () => {
   const cases: Array<[ProvisioningInternalState, string]> = [
     ["invite_validating", "Verifying access"],
     ["tenant_resolving", "Verifying access"],
-    ["tenant_creating", "Preparing your workspace"],
+    ["tenant_creating", "Resolving workspace binding"],
     ["membership_binding", "Applying default configuration"],
     ["workspace_bootstrapping", "Finalizing setup"],
     ["provisioning_complete", "Ready"],
@@ -103,6 +103,14 @@ describe("deriveProvisioningState — checklist", () => {
     for (const item of checklist) {
       expect(item.label.length).toBeGreaterThan(0);
     }
+  });
+
+  it("does not claim that activation created a workspace", () => {
+    const { checklist, stepMessage } = deriveProvisioningState("tenant_creating");
+    expect(checklist.map((item) => item.label)).toContain("Workspace binding resolved");
+    expect(checklist.map((item) => item.label)).not.toContain("Workspace created");
+    expect(stepMessage).toMatch(/binding/i);
+    expect(stepMessage).not.toMatch(/initializing your workspace environment/i);
   });
 });
 
