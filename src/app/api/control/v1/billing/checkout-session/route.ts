@@ -1,5 +1,5 @@
+import { ControlPlaneInputError, createCheckoutSession } from "@/lib/server/control-plane";
 import { NextRequest, NextResponse } from "next/server";
-import { createCheckoutSession } from "@/lib/server/control-plane";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
   try {
     return NextResponse.json(await createCheckoutSession({ tenantId, planCode, successUrl, cancelUrl }), { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Checkout session failed" }, { status: 403 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Checkout session failed" },
+      { status: error instanceof ControlPlaneInputError ? 400 : 403 },
+    );
   }
 }
