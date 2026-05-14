@@ -53,18 +53,18 @@ interface StateHistoryEvent {
 }
 
 // ─── ActivationSource Reconciliation ─────────────────────────────────────────
-// types.ts ActivationSource includes 'sandbox_fallback' which has no Prisma
-// enum counterpart. Mapped to TEST_TOKEN — sandbox fallback always uses the
-// internal test tenant (equivalent semantics). UI layer keeps the original label.
+// types.ts ActivationSource includes 'local_sandbox_seed' which has no Prisma
+// enum counterpart. Mapped to TEST_TOKEN because the local seed reuses the
+// internal test tenant semantics. UI layer keeps the original label.
 
-export type AppActivationSource = 'invite_token' | 'test_token' | 'sandbox_fallback'
+export type AppActivationSource = 'invite_token' | 'test_token' | 'local_sandbox_seed'
 export type AppActivationMode = 'invite' | 'test'
 
 export function mapActivationSource(source: AppActivationSource): ActivationSource {
   switch (source) {
     case 'invite_token':  return 'INVITE_TOKEN'
     case 'test_token':    return 'TEST_TOKEN'
-    case 'sandbox_fallback': return 'TEST_TOKEN'  // see note above
+    case 'local_sandbox_seed': return 'TEST_TOKEN'  // see note above
   }
 }
 

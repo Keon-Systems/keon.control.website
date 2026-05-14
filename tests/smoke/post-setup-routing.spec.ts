@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-test.skip(!process.env.BASE_URL, "BASE_URL is required for smoke tests.");
-
 test("completing setup routes to /integrations, not /control", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => {
@@ -24,12 +22,15 @@ test("completing setup routes to /integrations, not /control", async ({ page }) 
   await page.getByRole("button", { name: /byo ai/i }).click();
   await page.getByRole("button", { name: /^continue$/i }).click();
 
+  // Lifecycle preview interlude
+  await page.getByRole("button", { name: /continue to guardrails/i }).click();
+
   // Step 4: guardrails
   await page.getByRole("button", { name: /balanced/i }).click();
-  await page.getByRole("button", { name: /review ready state/i }).click();
+  await page.getByRole("button", { name: /review workspace/i }).click();
 
   // Complete step
-  await expect(page.getByRole("heading", { name: /workspace prepared/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /setup choices confirmed/i })).toBeVisible();
   await page.getByRole("button", { name: /connect your first integration/i }).click();
   await expect(page).toHaveURL(/\/integrations/);
 });
