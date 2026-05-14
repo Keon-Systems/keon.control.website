@@ -16,7 +16,7 @@ vi.mock("@/server/db/provisioning", () => ({
     const map: Record<string, string> = {
       invite_token: "INVITE_TOKEN",
       test_token: "TEST_TOKEN",
-      sandbox_fallback: "TEST_TOKEN",
+      local_sandbox_seed: "TEST_TOKEN",
     };
     return map[source] ?? "INVITE_TOKEN";
   },
@@ -72,7 +72,7 @@ function makeInviteRun(id = "prov_invite_run_001") {
   };
 }
 
-function makeSandboxRun(id = "prov_sandbox_run_001") {
+function makeLocalSandboxSeedRun(id = "prov_sandbox_run_001") {
   return {
     ...makeTestRun(id),
     activationMode: "INVITE",
@@ -282,12 +282,12 @@ describe("activation provision route", () => {
     });
   });
 
-  it("allows an explicit sandbox fallback for invite tokens without attached workspace IDs", async () => {
+  it("allows an explicit local sandbox seed for invite tokens without attached workspace IDs in development", async () => {
     process.env.KEON_INVITE_ACTIVATION_TOKEN = "approved-invite-token";
     process.env.KEON_INVITE_ALLOW_SANDBOX_FALLBACK = "true";
     const route = await loadRoute();
     const db = await loadMocks();
-    const sandboxRun = makeSandboxRun();
+    const sandboxRun = makeLocalSandboxSeedRun();
 
     vi.mocked(db.resolveActivationToken).mockResolvedValue(null);
     vi.mocked(db.startProvisioningRun).mockResolvedValue(makeStartResult(sandboxRun) as never);
@@ -303,11 +303,63 @@ describe("activation provision route", () => {
     await expect(response.json()).resolves.toMatchObject({
       activation: {
         mode: "invite",
-        source: "sandbox_fallback",
+        source: "local_sandbox_seed",
         tenantId: "ten_keon_internal_test",
         workspaceId: "ten_keon_internal_test",
         environment: "sandbox",
-        uiLabel: "Sandbox workspace fallback",
+        uiLabel: "Local sandbox seed",
+      },
+    });
+  });
+
+  it("does not allow invite activation to resolve to local sandbox seed in production", async () => {
+    setNodeEnv("production");
+    process.env.KEON_INVITE_ACTIVATION_TOKEN = "approved-invite-token";
+    process.env.KEON_INVITE_ALLOW_SANDBOX_FALLBACK = "true";
+    const route = await loadRoute();
+
+    const response = await route.POST(
+      new NextRequest("http://localhost/api/activation/provision", {
+        method: "POST",
+        body: JSON.stringify({ token: "approved-invite-token" }),
+      })
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: "invite_workspace_missing",
+      message: "Activation link is valid, but no prepared workspace is attached.",
+    });
+  });
+
+  it("does not surface local sandbox seed for invite-derived runs in production polling", async () => {
+    setNodeEnv("production");
+    process.env.KEON_INVITE_TENANT_ID = "ten_preview_001";
+    process.env.KEON_INVITE_TENANT_NAME = "Preview Workspace";
+    process.env.KEON_INVITE_WORKSPACE_ID = "ws_preview_001";
+    process.env.KEON_INVITE_WORKSPACE_NAME = "Preview Workspace";
+    process.env.KEON_INVITE_ENVIRONMENT = "production";
+    const route = await loadRoute();
+    const db = await loadMocks();
+    const sandboxRun = makeLocalSandboxSeedRun("prov_prod_poll_001");
+
+    vi.mocked(db.getProvisioningRun).mockResolvedValue(sandboxRun as never);
+    vi.mocked(db.resolveActivationToken).mockResolvedValue(sandboxRun as never);
+
+    const response = await route.GET(
+      new NextRequest(
+        "http://localhost/api/activation/provision?id=prov_prod_poll_001&token=approved-invite-token"
+      )
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      activation: {
+        mode: "invite",
+        source: "invite_token",
+        tenantId: "ten_preview_001",
+        workspaceId: "ws_preview_001",
+        environment: "production",
       },
     });
   });

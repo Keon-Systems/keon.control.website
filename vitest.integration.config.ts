@@ -1,5 +1,11 @@
 import path from 'node:path'
+import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
+
+// loadEnv with an empty prefix loads ALL variables (not just VITE_-prefixed ones).
+// This is required because Vitest only auto-injects VITE_* vars into worker processes;
+// un-prefixed vars like DATABASE_URL need to be explicitly passed via test.env.
+const env = loadEnv('test', process.cwd(), '')
 
 export default defineConfig({
   define: {
@@ -9,7 +15,9 @@ export default defineConfig({
     // Node environment — integration tests hit real Postgres, not jsdom.
     environment: 'node',
 
-    // DATABASE_URL must be set in .env before running.
+    // Inject all .env / .env.local vars into the worker process.
+    env,
+
     setupFiles: ['./tests/integration/setup/global.ts'],
 
     globals: true,
@@ -21,8 +29,9 @@ export default defineConfig({
     hookTimeout: 30_000,
 
     // Run test files serially — shared Postgres state must not interleave.
-    // Individual tests within a file are also serial (default).
-    sequence: { concurrent: false },
+    // sequence.concurrent only controls within-suite ordering; fileParallelism
+    // is what prevents Vitest from forking concurrent workers per file.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

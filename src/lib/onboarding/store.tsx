@@ -13,6 +13,14 @@ import {
 
 const STORAGE_KEY = "keon.onboarding.state";
 
+function persistOnboardingState(state: OnboardingState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 interface OnboardingStoreValue {
   hydrated: boolean;
   state: OnboardingState;
@@ -69,22 +77,30 @@ export function OnboardingStateProvider({ children }: { children: React.ReactNod
       return;
     }
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    persistOnboardingState(state);
   }, [hydrated, state]);
 
   const value = React.useMemo<OnboardingStoreValue>(
-    () => ({
-      hydrated,
-      state,
-      dispatch,
-      startSetup: () => dispatch({ type: "START_SETUP" }),
-      saveGoals: (selectedGoals) => dispatch({ type: "SAVE_GOALS", payload: { selectedGoals } }),
-      confirmAccess: (workspaceId) => dispatch({ type: "CONFIRM_ACCESS", payload: { workspaceId } }),
-      advanceLifecyclePreview: () => dispatch({ type: "ADVANCE_LIFECYCLE_PREVIEW" }),
-      applyGuardrails: (guardrailPreset) => dispatch({ type: "APPLY_GUARDRAILS", payload: { guardrailPreset } }),
-      finishOnboarding: () => dispatch({ type: "FINISH_ONBOARDING" }),
-      resetOnboarding: () => dispatch({ type: "RESET" }),
-    }),
+    () => {
+      const dispatchAndPersist = (event: OnboardingEvent) => {
+        const nextState = transitionOnboardingState(state, event);
+        persistOnboardingState(nextState);
+        dispatch(event);
+      };
+
+      return {
+        hydrated,
+        state,
+        dispatch,
+        startSetup: () => dispatchAndPersist({ type: "START_SETUP" }),
+        saveGoals: (selectedGoals) => dispatchAndPersist({ type: "SAVE_GOALS", payload: { selectedGoals } }),
+        confirmAccess: (workspaceId) => dispatchAndPersist({ type: "CONFIRM_ACCESS", payload: { workspaceId } }),
+        advanceLifecyclePreview: () => dispatchAndPersist({ type: "ADVANCE_LIFECYCLE_PREVIEW" }),
+        applyGuardrails: (guardrailPreset) => dispatchAndPersist({ type: "APPLY_GUARDRAILS", payload: { guardrailPreset } }),
+        finishOnboarding: () => dispatchAndPersist({ type: "FINISH_ONBOARDING" }),
+        resetOnboarding: () => dispatchAndPersist({ type: "RESET" }),
+      };
+    },
     [hydrated, state]
   );
 

@@ -110,7 +110,7 @@ export function ScopeConfirmationStep() {
     <StepShell
       eyebrow="Step 2 of 4"
       title="Confirm your workspace access"
-      description="Choose the workspace and environment Keon should prepare. This determines where guardrails, receipts, and later integrations will apply."
+      description="Choose the workspace and environment this browser session should bind to. This determines where guardrails, receipts, and later integrations will apply."
       footer={
         viewState === "ready_to_confirm" ? (
           <Button size="lg" onClick={() => { if (!selectedTenant) return; setIsConfirming(true); }}>
@@ -178,7 +178,7 @@ export function ScopeConfirmationStep() {
           <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Workspace confirmed</div>
           <div className="font-display text-3xl font-semibold text-white">{selectedTenant?.name}</div>
           <p className="text-sm leading-7 text-white/74">
-            Keon is preparing {environment} for this workspace now.
+            Keon is binding this browser session to {environment} for this workspace.
           </p>
         </div>
       ) : (
@@ -203,7 +203,7 @@ export function ScopeConfirmationStep() {
           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
             <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#7EE8E0]">Environment</div>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/72">
-              Choose where you want to start. Most teams begin in sandbox, then return later to prepare production.
+              Choose where you want to start. Most teams begin in sandbox, then return later when production access is explicitly enabled.
             </p>
             <div className="mt-5 inline-flex rounded-full border border-white/10 bg-black/20 p-1">
               {(["sandbox", "production"] as const).map((option) => {
@@ -226,7 +226,7 @@ export function ScopeConfirmationStep() {
               })}
             </div>
             <p className="mt-3 font-mono text-[10px] text-white/38">
-              Production preparation can be enabled after sandbox validation.
+              Production binding can be enabled after sandbox validation.
             </p>
           </div>
 

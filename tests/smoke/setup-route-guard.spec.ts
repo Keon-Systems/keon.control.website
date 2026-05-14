@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-test.skip(!process.env.BASE_URL, "BASE_URL is required for smoke tests.");
-
 test("WELCOME-state user at /setup?step=goals is redirected to /welcome", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => {
@@ -29,6 +27,6 @@ test("completed user revisiting /setup?step=goals sees 'Basic setup complete' in
     }));
   });
   await page.goto("/setup?step=goals");
-  await expect(page.getByText(/basic setup complete/i)).toBeVisible();
+  await expect(page.getByRole("banner").getByText(/basic setup complete/i).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /what do you want to use keon for first/i })).toBeVisible();
 });

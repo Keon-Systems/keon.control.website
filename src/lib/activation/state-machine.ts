@@ -18,7 +18,7 @@ import type {
 
 const STEP_LABELS: Record<ProvisioningUserStep, string> = {
   verifying_access: "Verifying access",
-  preparing_workspace: "Preparing your workspace",
+  preparing_workspace: "Resolving workspace binding",
   applying_configuration: "Applying default configuration",
   finalizing_setup: "Finalizing setup",
   ready: "Ready",
@@ -27,7 +27,7 @@ const STEP_LABELS: Record<ProvisioningUserStep, string> = {
 
 const STEP_MESSAGES: Record<ProvisioningUserStep, string> = {
   verifying_access: "Confirming your invitation and resolving your workspace.",
-  preparing_workspace: "Initializing your workspace environment.",
+  preparing_workspace: "Binding this activation to its approved workspace context.",
   applying_configuration: "Applying your governance baseline and default policies.",
   finalizing_setup: "Running final checks and preparing your control plane.",
   ready: "Your workspace is ready. Launching Keon Control.",
@@ -81,7 +81,7 @@ const CHECKLIST_STAGES: Array<{
   },
   {
     id: "workspace",
-    label: "Workspace created",
+    label: "Workspace binding resolved",
     activeAt: ["tenant_creating"],
     completedAt: ["membership_binding", "workspace_bootstrapping", "provisioning_complete"],
     failedAt: ["provisioning_failed"],

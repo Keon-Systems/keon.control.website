@@ -28,9 +28,9 @@ describe("ProvisioningPanel — step label rendering", () => {
     expect(screen.getByTestId("step-label")).toHaveTextContent("Verifying access");
   });
 
-  it("shows 'Preparing your workspace' for tenant_creating", () => {
+  it("shows 'Resolving workspace binding' for tenant_creating", () => {
     renderPanel("tenant_creating");
-    expect(screen.getByTestId("step-label")).toHaveTextContent("Preparing your workspace");
+    expect(screen.getByTestId("step-label")).toHaveTextContent("Resolving workspace binding");
   });
 
   it("shows 'Applying default configuration' for membership_binding", () => {
